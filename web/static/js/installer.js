@@ -30,7 +30,18 @@ const Installer = {
       this.socket = new WebSocket(wsUrl);
 
       this.socket.onmessage = (event) => {
-        this.appendLog(event.data);
+        let line = event.data;
+        try {
+          const parsed = JSON.parse(event.data);
+          if (parsed) {
+            if (parsed.type === 'init' && Array.isArray(parsed.history)) {
+              parsed.history.forEach(h => this.appendLog(h));
+              return;
+            }
+            if (parsed.data) line = parsed.data;
+          }
+        } catch (_) {}
+        this.appendLog(line);
       };
 
       this.socket.onclose = () => {

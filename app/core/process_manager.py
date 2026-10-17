@@ -5,6 +5,7 @@ import shutil
 import asyncio
 import socket
 import psutil
+import json
 from collections import deque
 from pathlib import Path
 from typing import Set, List, Deque, Dict, Any, Optional
@@ -112,9 +113,22 @@ class ProcessManager:
             return
         self.log_buffer.append(clean_line)
         dead_ws = set()
+        payload = json.dumps({"type": "log", "data": clean_line})
         for ws in self.connected_websockets:
             try:
-                await ws.send_text(clean_line)
+                await ws.send_text(payload)
+            except Exception:
+                dead_ws.add(ws)
+        self.connected_websockets.difference_update(dead_ws)
+
+    async def broadcast_status(self, new_status: str) -> None:
+        """Difunde una actualización de estado del servidor a todos los WebSockets conectados."""
+        self.status = new_status
+        payload = json.dumps({"type": "status", "status": new_status})
+        dead_ws = set()
+        for ws in self.connected_websockets:
+            try:
+                await ws.send_text(payload)
             except Exception:
                 dead_ws.add(ws)
         self.connected_websockets.difference_update(dead_ws)

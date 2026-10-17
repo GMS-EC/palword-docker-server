@@ -37,6 +37,10 @@ const Console = {
     this.setupAutoScroll();
     this.pollStatus();
 
+    // Periodic polling to keep stats, RAM/CPU bars, and server state synced
+    if (this._statusTimer) clearInterval(this._statusTimer);
+    this._statusTimer = setInterval(() => this.pollStatus(), 3000);
+
     window.addEventListener('dockraft:language_changed', () => {
       if (this.lastStats) this.updateStatsUI(this.lastStats);
       if (this.lastTps !== undefined && this.lastTps !== null) {
@@ -101,20 +105,41 @@ const Console = {
     if (jump) jump.style.display = 'none';
   },
 
+  _wasConnected: false,
+
   setupWebSocket() {
+    if (this.socket && (this.socket.readyState === WebSocket.OPEN || this.socket.readyState === WebSocket.CONNECTING)) {
+      return;
+    }
+
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${protocol}//${window.location.host}/ws/console`;
 
-    this.socket = new WebSocket(wsUrl);
+    try {
+      this.socket = new WebSocket(wsUrl);
+    } catch (err) {
+      console.warn("Error creating WebSocket:", err);
+      return;
+    }
 
     this.socket.onopen = () => {
+      this._wasConnected = true;
       this.reconnectDelay = 3000;
       this.appendTerminalLine(this._t('t_console_ws_connected', '[Palworld] Conectado al flujo de consola en vivo.'));
     };
 
     this.socket.onmessage = (event) => {
       try {
-        const msg = JSON.parse(event.data);
+        let msg;
+        try {
+          msg = JSON.parse(event.data);
+        } catch (_) {
+          msg = { type: 'log', data: event.data };
+        }
+        if (typeof msg === 'string') {
+          msg = { type: 'log', data: msg };
+        }
+
         if (msg.type === 'init') {
           this.updateStatusUI(msg.status);
           const body = document.getElementById('terminal-content');
@@ -139,6 +164,8 @@ const Console = {
           if (msg.data && msg.data.tps) {
             this.updateTpsUI(msg.data.tps);
           }
+        } else if (msg.data) {
+          this.appendTerminalLine(msg.data);
         }
       } catch (e) {
         console.error("Error parsing WS message:", e);
@@ -146,7 +173,7 @@ const Console = {
     };
 
     this.socket.onclose = (event) => {
-      if (event && (event.code === 4001 || event.code === 4003)) {
+      if (event && (event.code === 4001 || event.code === 4003 || event.code === 1008)) {
         if (typeof App !== 'undefined' && App.handleSessionExpired) {
           App.handleSessionExpired();
         } else {
@@ -154,8 +181,14 @@ const Console = {
         }
         return;
       }
-      const lostMsg = this._t('console_reconnecting', '[Palworld] Conexión perdida con la consola. Reconectando...');
-      this.appendTerminalLine(lostMsg);
+
+      // Only print disconnection alert if we were previously connected, avoiding reconnect spam
+      if (this._wasConnected) {
+        const lostMsg = this._t('console_reconnecting', '[Palworld] Conexión perdida con la consola. Reconectando...');
+        this.appendTerminalLine(lostMsg);
+        this._wasConnected = false;
+      }
+
       // Exponential backoff (3s -> 60s) so a long outage doesn't hammer the server.
       const delay = this.reconnectDelay;
       this.reconnectDelay = Math.min(60000, this.reconnectDelay * 2);

@@ -420,8 +420,7 @@ async def api_auth_login(req: LoginRequest, request: Request, response: Response
 
 
 # --- WebSocket de Consola & Streaming de Logs ---
-@app.websocket("/ws/logs")
-async def websocket_logs(websocket: WebSocket):
+async def _handle_websocket_connection(websocket: WebSocket):
     token = websocket.cookies.get(SESSION_COOKIE_NAME)
     if not verify_session_token(token):
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
@@ -430,12 +429,16 @@ async def websocket_logs(websocket: WebSocket):
     await websocket.accept()
     process_manager.connected_websockets.add(websocket)
 
-    # Enviar logs recientes almacenados en buffer
-    for line in list(process_manager.log_buffer):
-        try:
-            await websocket.send_text(line)
-        except Exception:
-            break
+    # 1. Enviar estado inicial y logs acumulados en buffer
+    try:
+        init_payload = {
+            "type": "init",
+            "status": process_manager.get_status(),
+            "history": list(process_manager.log_buffer)
+        }
+        await websocket.send_text(json.dumps(init_payload))
+    except Exception:
+        pass
 
     try:
         while True:
@@ -458,13 +461,25 @@ async def websocket_logs(websocket: WebSocket):
             activity_manager.log("Consola", f"Comando ejecutado: {cmd_text}")
             resp = await pal_api_client.execute_raw_command(cmd_text)
             if resp:
-                await websocket.send_text(f"[RCON Response] {resp}")
+                log_line = f"[RCON Response] {resp}"
+                await websocket.send_text(json.dumps({"type": "log", "data": log_line}))
     except WebSocketDisconnect:
         pass
     except Exception:
         pass
     finally:
         process_manager.connected_websockets.discard(websocket)
+
+
+@app.websocket("/ws/console")
+async def websocket_console(websocket: WebSocket):
+    await _handle_websocket_connection(websocket)
+
+
+@app.websocket("/ws/logs")
+async def websocket_logs(websocket: WebSocket):
+    await _handle_websocket_connection(websocket)
+
 
 
 # --- Endpoints de Control de Servidor ---
