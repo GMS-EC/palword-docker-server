@@ -262,53 +262,6 @@ const Metrics = {
       stBadge.style.background = isOnline ? 'rgba(46, 160, 67, 0.15)' : 'rgba(218, 54, 51, 0.15)';
       stBadge.style.color = isOnline ? '#3fb950' : '#f85149';
     }
-
-    // TPS Performance KPI
-    const tpsVal = document.getElementById('metric-kpi-tps-val');
-    const tpsBadge = document.getElementById('metric-kpi-tps-badge');
-    const tps1m = document.getElementById('metric-kpi-tps-1m');
-    const tps5m = document.getElementById('metric-kpi-tps-5m');
-    const tps15m = document.getElementById('metric-kpi-tps-15m');
-
-    if (tpsVal) {
-      if (!isOnline) {
-        tpsVal.textContent = '--';
-        if (tpsBadge) {
-          tpsBadge.textContent = this._t('t_metric_tps_offline', 'Fuera de línea');
-          tpsBadge.style.background = 'rgba(148, 163, 184, 0.15)';
-          tpsBadge.style.color = '#94a3b8';
-        }
-        if (tps1m) tps1m.textContent = '--';
-        if (tps5m) tps5m.textContent = '--';
-        if (tps15m) tps15m.textContent = '--';
-      } else {
-        const tpsObj = s.tps;
-        const v1 = (tpsObj && tpsObj['1m'] != null) ? Number(tpsObj['1m']) : 20.0;
-        const v5 = (tpsObj && tpsObj['5m'] != null) ? Number(tpsObj['5m']) : 20.0;
-        const v15 = (tpsObj && tpsObj['15m'] != null) ? Number(tpsObj['15m']) : 20.0;
-
-        tpsVal.textContent = v1.toFixed(1);
-        if (tps1m) tps1m.textContent = v1.toFixed(1);
-        if (tps5m) tps5m.textContent = v5.toFixed(1);
-        if (tps15m) tps15m.textContent = v15.toFixed(1);
-
-        if (tpsBadge) {
-          if (v1 >= 18.0) {
-            tpsBadge.textContent = this._t('t_metric_tps_optimal', 'Óptimo');
-            tpsBadge.style.background = 'rgba(16, 185, 129, 0.15)';
-            tpsBadge.style.color = '#10b981';
-          } else if (v1 >= 15.0) {
-            tpsBadge.textContent = this._t('t_metric_tps_moderate', 'Aceptable');
-            tpsBadge.style.background = 'rgba(245, 158, 11, 0.15)';
-            tpsBadge.style.color = '#f59e0b';
-          } else {
-            tpsBadge.textContent = this._t('t_metric_tps_low', 'Bajo');
-            tpsBadge.style.background = 'rgba(248, 81, 73, 0.15)';
-            tpsBadge.style.color = '#f85149';
-          }
-        }
-      }
-    }
   },
 
   redraw() {
@@ -371,7 +324,8 @@ const Metrics = {
       const sample = this.history[idx];
       if (!sample) continue;
       const x = padding.left + (idx * stepX);
-      ctx.fillText(sample.time_str || '', x, padding.top + chartH + 8);
+      const timeStr = sample.time_str || (sample.timestamp ? new Date(sample.timestamp * 1000).toLocaleTimeString() : '');
+      ctx.fillText(timeStr, x, padding.top + chartH + 8);
     }
 
     // Series visibility
@@ -383,29 +337,29 @@ const Metrics = {
 
     // Draw Series: RAM % (Cyan)
     if (showRamPct) {
-      this.drawSeries(ctx, this.history, s => s.memory_percent || 0, 100, '#38bdf8', 'rgba(56, 189, 248, 0.12)', padding, chartH, stepX);
+      this.drawSeries(ctx, this.history, s => (s.memory_percent !== undefined ? s.memory_percent : (s.ram_percent !== undefined ? s.ram_percent : (s.ram || 0))), 100, '#38bdf8', 'rgba(56, 189, 248, 0.12)', padding, chartH, stepX);
     }
 
     // Draw Series: RAM MB (Scaled relative to assigned RAM)
     if (showRamMb) {
       const assigned = this.summary?.assigned_ram_mb || 2048;
-      this.drawSeries(ctx, this.history, s => ((s.memory_mb || 0) / assigned) * 100, 100, '#60a5fa', 'rgba(96, 165, 250, 0.08)', padding, chartH, stepX);
+      this.drawSeries(ctx, this.history, s => (((s.memory_mb || 0) / assigned) * 100), 100, '#60a5fa', 'rgba(96, 165, 250, 0.08)', padding, chartH, stepX);
     }
 
     // Draw Series: Disk % (Teal)
     if (showDiskPct) {
-      this.drawSeries(ctx, this.history, s => s.disk_percent || 0, 100, '#06b6d4', 'rgba(6, 182, 212, 0.12)', padding, chartH, stepX);
+      this.drawSeries(ctx, this.history, s => (s.disk_percent || 0), 100, '#06b6d4', 'rgba(6, 182, 212, 0.12)', padding, chartH, stepX);
     }
 
     // Draw Series: CPU % (Amber)
     if (showCpu) {
-      this.drawSeries(ctx, this.history, s => s.cpu_percent || 0, 100, '#f59e0b', 'rgba(245, 158, 11, 0.15)', padding, chartH, stepX);
+      this.drawSeries(ctx, this.history, s => (s.cpu_percent !== undefined ? s.cpu_percent : (s.cpu || 0)), 100, '#f59e0b', 'rgba(245, 158, 11, 0.15)', padding, chartH, stepX);
     }
 
     // Draw Series: Players (Purple, scaled e.g. 0 to 20 or peak)
     if (showPlayers) {
       const maxPl = Math.max(10, (this.summary?.peak_players || 0) + 2);
-      this.drawSeries(ctx, this.history, s => ((s.players_online || 0) / maxPl) * 100, 100, '#a855f7', 'rgba(168, 85, 247, 0.15)', padding, chartH, stepX);
+      this.drawSeries(ctx, this.history, s => ((((s.players_online !== undefined ? s.players_online : s.players) || 0) / maxPl) * 100), 100, '#a855f7', 'rgba(168, 85, 247, 0.15)', padding, chartH, stepX);
     }
 
     // Draw hover cursor guide line
@@ -484,18 +438,23 @@ const Metrics = {
     const tBody = document.getElementById('metrics-tooltip-body');
     if (!tooltip || !tTime || !tBody || !sample) return;
 
-    tTime.textContent = sample.time_str || '--:--:--';
+    const timeVal = sample.time_str || (sample.timestamp ? new Date(sample.timestamp * 1000).toLocaleTimeString() : '--:--:--');
+    tTime.textContent = timeVal;
     const diskUsed = sample.disk_used_mb || 0;
     const diskFormatted = diskUsed >= 1024 ? (diskUsed / 1024).toFixed(1) + ' GB' : Math.round(diskUsed) + ' MB';
+    const cpuVal = (sample.cpu_percent !== undefined ? sample.cpu_percent : (sample.cpu || 0)).toFixed(1);
+    const ramVal = Math.round(sample.memory_mb || 0);
+    const ramPct = (sample.memory_percent !== undefined ? sample.memory_percent : (sample.ram_percent !== undefined ? sample.ram_percent : (sample.ram || 0)));
+    const playersVal = sample.players_online !== undefined ? sample.players_online : (sample.players || 0);
 
     tBody.innerHTML = `
       <div style="display: flex; justify-content: space-between; gap: 14px; color: #cbd5e1;">
         <span style="color: #f59e0b; font-weight: 600;">${this._t('t_metric_tt_cpu', 'CPU:')}</span>
-        <span style="font-family: var(--font-mono);">${sample.cpu_percent || 0.0}%</span>
+        <span style="font-family: var(--font-mono);">${cpuVal}%</span>
       </div>
       <div style="display: flex; justify-content: space-between; gap: 14px; color: #cbd5e1;">
         <span style="color: #38bdf8; font-weight: 600;">${this._t('t_metric_tt_ram', 'RAM:')}</span>
-        <span style="font-family: var(--font-mono);">${Math.round(sample.memory_mb || 0)} MB (${sample.memory_percent || 0}%)</span>
+        <span style="font-family: var(--font-mono);">${ramVal} MB (${ramPct}%)</span>
       </div>
       <div style="display: flex; justify-content: space-between; gap: 14px; color: #cbd5e1;">
         <span style="color: #06b6d4; font-weight: 600;">${this._t('t_metric_tt_disk', 'Disco:')}</span>
@@ -503,7 +462,7 @@ const Metrics = {
       </div>
       <div style="display: flex; justify-content: space-between; gap: 14px; color: #cbd5e1;">
         <span style="color: #a855f7; font-weight: 600;">${this._t('t_metric_tt_players', 'Jugadores:')}</span>
-        <span style="font-family: var(--font-mono);">${sample.players_online || 0}</span>
+        <span style="font-family: var(--font-mono);">${playersVal}</span>
       </div>
     `;
 

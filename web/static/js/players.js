@@ -137,17 +137,17 @@ const Players = {
       tr.style.borderBottom = '1px solid #21262d';
 
       // Player Cell
-      const opBadge = p.is_op ? `<span class="badge" style="background: rgba(234, 179, 8, 0.15); border: 1px solid #eab308; color: #fbbf24; font-size: 0.68rem; padding: 1px 6px;">OP</span>` : '';
+      const opBadge = p.is_op ? `<span class="badge" style="background: rgba(234, 179, 8, 0.15); border: 1px solid #eab308; color: #fbbf24; font-size: 0.65rem; padding: 1px 4px;">OP</span>` : '';
       const safeName = this.escapeHtml(p.name);
 
       // Status Cell
       const onlineLabel = this.tr('t_player_online', 'En línea');
-      const offlineLabel = this.tr('t_player_offline', 'Fuera de línea');
+      const offlineLabel = this.tr('t_player_offline', 'Desconectado');
       let statusHtml = '';
       if (p.is_online) {
         statusHtml = `
-          <div style="display: flex; align-items: center; gap: 6px; color: #3fb950; font-weight: 600;">
-            <span class="status-dot" style="background-color: #34d399; width: 7px; height: 7px; box-shadow: 0 0 6px #34d399;"></span>
+          <div style="display: inline-flex; align-items: center; gap: 5px; color: #3fb950; font-weight: 600; font-size: 0.76rem;">
+            <span class="status-dot" style="background-color: #34d399; width: 6px; height: 6px; box-shadow: 0 0 5px #34d399; flex-shrink: 0;"></span>
             <span>${onlineLabel}</span>
           </div>
         `;
@@ -157,14 +157,13 @@ const Players = {
         if (isNever) {
           connText = this.tr('t_player_never', 'Nunca');
         }
-        const lastConnLabel = this.tr('t_player_last_seen', 'Última vez');
         statusHtml = `
-          <div style="display: flex; flex-direction: column; gap: 2px;">
-            <div style="display: flex; align-items: center; gap: 6px; color: #8b949e; font-weight: 500; font-size: 0.8rem;">
-              <span class="status-dot" style="background-color: #6e7681; width: 7px; height: 7px;"></span>
+          <div style="display: flex; flex-direction: column; gap: 1px; min-width: 0;">
+            <div style="display: inline-flex; align-items: center; gap: 5px; color: #8b949e; font-weight: 500; font-size: 0.74rem;">
+              <span class="status-dot" style="background-color: #6e7681; width: 6px; height: 6px; flex-shrink: 0;"></span>
               <span>${offlineLabel}</span>
             </div>
-            <span style="font-size: 0.72rem; color: var(--text-dim); padding-left: 13px; white-space: nowrap;">${lastConnLabel}: ${this.escapeHtml(connText)}</span>
+            <span style="font-size: 0.66rem; color: var(--text-dim); max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${this.escapeHtml(connText)}">${this.escapeHtml(connText)}</span>
           </div>
         `;
       }
@@ -174,39 +173,41 @@ const Players = {
       const kickAttr = !p.is_online ? 'disabled' : 'data-action="kick"';
 
       const banBtnTitle = this.tr('t_player_btn_ban_title', 'Banear jugador');
-      const banBtnLabel = this.tr('t_player_btn_ban', 'Banear');
+      const banBtnLabel = this.tr('t_player_btn_ban', 'Ban');
       const kickBtnTitle = this.tr('t_player_btn_kick_title', 'Expulsar jugador');
-      const kickBtnLabel = this.tr('t_player_btn_kick', 'Expulsar');
+      const kickBtnLabel = this.tr('t_player_btn_kick', 'Kick');
       const deopTitle = this.tr('t_player_btn_deop_title', 'Revocar permisos de operador');
       const opTitle = this.tr('t_player_btn_op_title', 'Hacer Operador del servidor');
 
       const opBtn = p.is_op
-        ? `<button class="btn btn-outline" style="padding: 4px 8px; font-size: 0.74rem; min-height: 26px; border-color: #eab308; color: #fbbf24;" data-action="deop" title="${deopTitle}">De-OP</button>`
-        : `<button class="btn btn-warning" style="padding: 4px 8px; font-size: 0.74rem; min-height: 26px; background-color: #eab308; border-color: #ca8a04; color: #000; font-weight: 600;" data-action="op" title="${opTitle}">OP</button>`;
+        ? `<button class="btn btn-outline" style="padding: 2px 6px; font-size: 0.72rem; min-height: 24px; line-height: 1; border-color: #eab308; color: #fbbf24; border-radius: 4px;" data-action="deop" title="${deopTitle}">De-OP</button>`
+        : `<button class="btn btn-warning" style="padding: 2px 6px; font-size: 0.72rem; min-height: 24px; line-height: 1; background-color: #eab308; border-color: #ca8a04; color: #000; font-weight: 600; border-radius: 4px;" data-action="op" title="${opTitle}">OP</button>`;
 
-      const levelBadge = p.level ? `<span class="badge" style="background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3); color: #38bdf8; font-size: 0.68rem; padding: 1px 6px;">Nv. ${p.level}</span>` : '';
+      const levelBadge = p.level ? `<span class="badge" style="background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3); color: #38bdf8; font-size: 0.65rem; padding: 1px 4px;">Nv. ${p.level}</span>` : '';
 
       tr.innerHTML = `
-        <td style="padding: 10px 12px;">
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <div style="width: 28px; height: 28px; border-radius: 6px; background: rgba(56, 189, 248, 0.1); display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; border: 1px solid rgba(56, 189, 248, 0.3);">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <td style="padding: 6px 8px; overflow: hidden;">
+          <div style="display: flex; align-items: center; gap: 7px; min-width: 0;">
+            <div style="width: 24px; height: 24px; border-radius: 5px; background: rgba(56, 189, 248, 0.1); display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; border: 1px solid rgba(56, 189, 248, 0.3);">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             </div>
-            <div style="display: flex; flex-direction: column;">
-              <span style="font-family: var(--font-mono); font-weight: 600; color: #c9d1d9; font-size: 0.88rem;">${safeName}</span>
-              ${p.steam_id && p.steam_id !== '-' ? `<span style="font-size: 0.7rem; color: var(--text-dim); font-family: var(--font-mono);">${this.escapeHtml(p.steam_id)}</span>` : ''}
+            <div style="display: flex; flex-direction: column; min-width: 0; overflow: hidden;">
+              <div style="display: flex; align-items: center; gap: 4px; overflow: hidden;">
+                <span style="font-family: var(--font-mono); font-weight: 600; color: #c9d1d9; font-size: 0.82rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${safeName}</span>
+                ${levelBadge}
+                ${opBadge}
+              </div>
+              ${p.steam_id && p.steam_id !== '-' ? `<span style="font-size: 0.68rem; color: var(--text-dim); font-family: var(--font-mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 130px;" title="${this.escapeHtml(p.steam_id)}">${this.escapeHtml(p.steam_id)}</span>` : ''}
             </div>
-            ${levelBadge}
-            ${opBadge}
           </div>
         </td>
-        <td style="padding: 10px 12px;">
+        <td style="padding: 6px 6px; overflow: hidden;">
           ${statusHtml}
         </td>
-        <td style="padding: 10px 12px; text-align: right;">
-          <div style="display: inline-flex; gap: 6px; align-items: center;">
-            <button class="btn btn-danger" style="padding: 4px 10px; font-size: 0.78rem; min-height: 28px;" data-action="ban" title="${banBtnTitle}">${banBtnLabel}</button>
-            <button class="btn btn-outline" style="padding: 4px 10px; font-size: 0.78rem; min-height: 28px; border-color: #da3633; color: #f85149; ${kickDisabled}" ${kickAttr} title="${kickBtnTitle}">${kickBtnLabel}</button>
+        <td style="padding: 6px 8px; text-align: right; overflow: hidden;">
+          <div style="display: inline-flex; gap: 3px; align-items: center; justify-content: flex-end;">
+            <button class="btn btn-danger" style="padding: 2px 7px; font-size: 0.72rem; min-height: 24px; line-height: 1; border-radius: 4px;" data-action="ban" title="${banBtnTitle}">${banBtnLabel}</button>
+            <button class="btn btn-outline" style="padding: 2px 7px; font-size: 0.72rem; min-height: 24px; line-height: 1; border-color: #da3633; color: #f85149; border-radius: 4px; ${kickDisabled}" ${kickAttr} title="${kickBtnTitle}">${kickBtnLabel}</button>
             ${opBtn}
           </div>
         </td>
@@ -244,31 +245,25 @@ const Players = {
       const tr = document.createElement('tr');
       tr.style.borderBottom = '1px solid #21262d';
       const safeName = this.escapeHtml(b.name);
-      const bannedLabel = this.tr('t_player_status_banned', 'Baneado');
-      const defaultReason = this.tr('t_player_reason_default', 'Baneado por un operador');
+      const defaultReason = this.tr('t_player_reason_default', 'Baneado por operador');
       const pardonTitle = this.tr('t_player_btn_pardon_title', 'Desbanear jugador');
-      const pardonLabel = this.tr('t_player_btn_pardon', 'Desbanear');
+      const pardonLabel = this.tr('t_player_btn_pardon', 'Perdonar');
 
       tr.innerHTML = `
-        <td style="padding: 10px 12px;">
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <div style="width: 28px; height: 28px; border-radius: 6px; background: rgba(218, 54, 51, 0.15); display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; border: 1px solid #da3633;">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#f85149" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+        <td style="padding: 6px 8px; overflow: hidden;">
+          <div style="display: flex; align-items: center; gap: 7px; min-width: 0;">
+            <div style="width: 24px; height: 24px; border-radius: 5px; background: rgba(218, 54, 51, 0.15); display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; border: 1px solid #da3633;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#f85149" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
             </div>
-            <span style="font-family: var(--font-mono); font-weight: 600; color: #f85149; font-size: 0.88rem;">${safeName}</span>
+            <span style="font-family: var(--font-mono); font-weight: 600; color: #f85149; font-size: 0.82rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${safeName}</span>
           </div>
         </td>
-        <td style="padding: 10px 12px;">
-          <span style="display: inline-flex; align-items: center; gap: 6px; color: #f85149; font-size: 0.82rem; font-weight: 600;">
-            <span class="status-dot" style="background-color: #f85149; width: 7px; height: 7px;"></span> ${bannedLabel}
-          </span>
-        </td>
-        <td style="padding: 10px 12px; font-size: 0.82rem; color: var(--text-dim); max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${this.escapeHtml(b.reason || defaultReason)}">
+        <td style="padding: 6px 6px; font-size: 0.74rem; color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${this.escapeHtml(b.reason || defaultReason)}">
           ${this.escapeHtml(b.reason || defaultReason)}
         </td>
-        <td style="padding: 10px 12px; text-align: right;">
-          <button class="btn btn-outline" style="padding: 4px 10px; font-size: 0.78rem; min-height: 28px; border-color: #2ea043; color: #3fb950; display: inline-flex; align-items: center; gap: 4px;" data-action="pardon" title="${pardonTitle}">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+        <td style="padding: 6px 8px; text-align: right; overflow: hidden;">
+          <button class="btn btn-outline" style="padding: 2px 8px; font-size: 0.72rem; min-height: 24px; line-height: 1; border-color: #2ea043; color: #3fb950; border-radius: 4px; display: inline-flex; align-items: center; gap: 3px;" data-action="pardon" title="${pardonTitle}">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
             ${pardonLabel}
           </button>
         </td>

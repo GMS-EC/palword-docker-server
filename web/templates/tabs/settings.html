@@ -120,10 +120,50 @@
           </div>
         </div>
 
-        <div class="form-group setting-prop-item" data-key="CrossplayPlatforms">
-          <label class="form-label">Plataformas de Juego Cruzado (CrossplayPlatforms)</label>
-          <input type="text" class="form-input prop-input" id="prop-CrossplayPlatforms" data-key="CrossplayPlatforms" value="(Steam,Xbox,PS5,Mac)" oninput="Settings.markDirty()">
-          <div class="field-hint">Plataformas admitidas. Formato: (Steam,Xbox,PS5,Mac)</div>
+        <!-- Crossplay Multiplataforma Control -->
+        <div class="form-group setting-prop-item" data-key="CrossplayPlatforms" style="background: rgba(88, 166, 255, 0.05); border: 1px solid rgba(88, 166, 255, 0.2); border-radius: 8px; padding: 14px 16px; margin-bottom: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <div>
+              <div style="font-weight: 600; color: #58a6ff; font-size: 0.95rem; display: flex; align-items: center; gap: 6px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                <span>Habilitar Juego Cruzado / Crossplay</span>
+              </div>
+              <div style="font-size: 0.78rem; color: var(--text-dim); margin-top: 2px;">
+                Permite conectar jugadores de consolas y PC en la misma partida comunitaria.
+              </div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="toggle-crossplay-enabled" onchange="Settings.onCrossplayToggle(this.checked)">
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <!-- Plataformas Checkboxes -->
+          <div id="crossplay-platforms-picker" style="display: flex; flex-wrap: wrap; gap: 14px; padding: 8px 0; border-top: 1px solid rgba(255,255,255,0.06); margin-top: 6px;">
+            <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.82rem; color: #e6edf3; cursor: pointer;">
+              <input type="checkbox" id="crossplay-plat-steam" value="Steam" checked disabled>
+              <span>Steam (PC)</span>
+            </label>
+            <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.82rem; color: #e6edf3; cursor: pointer;">
+              <input type="checkbox" class="crossplay-plat-check" id="crossplay-plat-xbox" value="Xbox" onchange="Settings.syncCrossplayFromUI()">
+              <span>Xbox / Game Pass</span>
+            </label>
+            <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.82rem; color: #e6edf3; cursor: pointer;">
+              <input type="checkbox" class="crossplay-plat-check" id="crossplay-plat-ps5" value="PS5" onchange="Settings.syncCrossplayFromUI()">
+              <span>PlayStation 5</span>
+            </label>
+            <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.82rem; color: #e6edf3; cursor: pointer;">
+              <input type="checkbox" class="crossplay-plat-check" id="crossplay-plat-mac" value="Mac" onchange="Settings.syncCrossplayFromUI()">
+              <span>Mac</span>
+            </label>
+          </div>
+
+          <!-- Hidden raw input for compatibility with Settings.collectVisualForm() -->
+          <input type="hidden" class="prop-input" id="prop-CrossplayPlatforms" data-key="CrossplayPlatforms" value="(Steam,Xbox,PS5,Mac)">
+
+          <div class="field-hint" style="margin-top: 6px; font-size: 0.74rem;">
+            Nota: Al activar Xbox o PS5 se añade automáticamente <code>-publiclobby</code> al inicio del servidor para que aparezca en la lista comunitaria oficial dentro del juego.
+          </div>
         </div>
 
         <div class="grid-2">

@@ -149,21 +149,13 @@ const Console = {
           this.appendTerminalLine(msg.data);
         } else if (msg.type === 'status') {
           this.updateStatusUI(msg.status);
-          if (msg.status === 'OFFLINE') {
-            this.updateTpsUI(null);
-          }
         } else if (msg.type === 'eula_required') {
           App.openEulaModal();
         } else if (msg.type === 'crash_diagnostics') {
           this.showCrashAlert(msg.data);
-        } else if (msg.type === 'tps') {
-          this.updateTpsUI(msg.data);
         } else if (msg.type === 'stats') {
           this.updateStatsUI(msg.data);
           this.checkInstalled(msg.data);
-          if (msg.data && msg.data.tps) {
-            this.updateTpsUI(msg.data.tps);
-          }
         } else if (msg.data) {
           this.appendTerminalLine(msg.data);
         }
@@ -508,7 +500,11 @@ const Console = {
         topVersion.textContent = `${typeLabel} ${stats.server_version || ''}`;
       }
       if (topMotd) topMotd.textContent = stats.motd || this._t('t_console_motd_default', 'Palworld Dedicated Server');
-      if (stats.tps) this.updateTpsUI(stats.tps);
+      const topCrossplay = document.getElementById('top-server-crossplay');
+      if (topCrossplay) {
+        const cp = stats.crossplay_platforms || (stats.ini_settings && stats.ini_settings.CrossplayPlatforms) || 'Steam / Xbox / PS5';
+        topCrossplay.textContent = cp;
+      }
     }
 
     // Update mobile overview bar if present
@@ -516,11 +512,6 @@ const Console = {
     if (mobDot && stats) {
       const st = (stats.status || 'offline').toLowerCase();
       mobDot.className = `status-dot ${st}`;
-    }
-    if (stats && stats.tps) {
-      this.updateTpsUI(stats.tps);
-    } else if (stats && stats.status !== 'RUNNING') {
-      this.updateTpsUI(null);
     }
   },
 
@@ -569,101 +560,7 @@ const Console = {
   },
 
   updateTpsUI(tps) {
-    this.lastTps = tps;
-    const topTps = document.getElementById('top-server-tps');
-    const mobTps = document.getElementById('banner-mob-tps');
-    const kpiVal = document.getElementById('metric-kpi-tps-val');
-    const kpiBadge = document.getElementById('metric-kpi-tps-badge');
-    const kpi1m = document.getElementById('metric-kpi-tps-1m');
-    const kpi5m = document.getElementById('metric-kpi-tps-5m');
-    const kpi15m = document.getElementById('metric-kpi-tps-15m');
-
-    let raw1m = null;
-    let raw5m = null;
-    let raw15m = null;
-
-    if (tps && typeof tps === 'object') {
-      if (tps.status !== 'offline') {
-        raw1m = tps['1m'] !== undefined ? tps['1m'] : tps.tps_1m;
-        raw5m = tps['5m'] !== undefined ? tps['5m'] : tps.tps_5m;
-        raw15m = tps['15m'] !== undefined ? tps['15m'] : tps.tps_15m;
-      }
-    } else if (typeof tps === 'number') {
-      raw1m = tps;
-    }
-
-    if (raw1m === null || raw1m === undefined || isNaN(Number(raw1m))) {
-      if (topTps) {
-        topTps.textContent = '--';
-        topTps.style.color = 'var(--text-dim)';
-      }
-      if (mobTps) {
-        mobTps.textContent = '-- FPS';
-        mobTps.style.color = '#8b949e';
-        mobTps.style.background = 'rgba(110, 118, 129, 0.15)';
-        mobTps.style.borderColor = 'rgba(110, 118, 129, 0.3)';
-      }
-      if (kpiVal) kpiVal.textContent = '--';
-      if (kpiBadge) {
-        kpiBadge.textContent = this._t('t_console_tps_offline', 'Fuera de línea');
-        kpiBadge.style.color = '#8b949e';
-        kpiBadge.style.background = 'rgba(139, 148, 158, 0.15)';
-      }
-      return;
-    }
-
-    const val1m = Number(raw1m);
-    const val5m = Number(raw5m !== null && raw5m !== undefined ? raw5m : val1m);
-    const val15m = Number(raw15m !== null && raw15m !== undefined ? raw15m : val1m);
-
-    let color = '#3fb950'; // green
-    let label = this._t('t_console_tps_optimal', 'Óptimo');
-    let bg = 'rgba(46, 160, 67, 0.15)';
-    let border = 'rgba(63, 185, 80, 0.35)';
-
-    if (val1m < 30.0) {
-      color = '#f85149'; // red lag
-      label = this._t('t_console_tps_lag', 'Lag Severo');
-      bg = 'rgba(248, 81, 73, 0.15)';
-      border = 'rgba(248, 81, 73, 0.35)';
-    } else if (val1m < 50.0) {
-      color = '#d29922'; // amber moderate
-      label = this._t('t_console_tps_moderate', 'Carga Moderada');
-      bg = 'rgba(210, 153, 34, 0.15)';
-      border = 'rgba(210, 153, 34, 0.35)';
-    }
-
-    const tpsText = `${val1m.toFixed(1)} FPS`;
-
-    if (topTps) {
-      topTps.textContent = tpsText;
-      topTps.style.color = color;
-    }
-    if (mobTps) {
-      mobTps.textContent = tpsText;
-      mobTps.style.color = color;
-      mobTps.style.background = bg;
-      mobTps.style.borderColor = border;
-    }
-    if (kpiVal) {
-      kpiVal.textContent = val1m.toFixed(1);
-      kpiVal.style.color = color;
-    }
-    if (kpiBadge) {
-      kpiBadge.textContent = label;
-      kpiBadge.style.color = color;
-      kpiBadge.style.background = bg;
-    }
-    if (kpi1m) {
-      kpi1m.textContent = val1m.toFixed(1);
-      kpi1m.style.color = color;
-    }
-    if (kpi5m) {
-      kpi5m.textContent = val5m.toFixed(1);
-    }
-    if (kpi15m) {
-      kpi15m.textContent = val15m.toFixed(1);
-    }
+    // Leftover Minecraft TPS metric removed for Palworld
   },
 
   showCrashAlert(diag) {

@@ -279,11 +279,21 @@ const Files = {
       row.className = `file-row ${isSelected ? 'row-selected' : ''}`;
       row.dataset.path = itemRelativePath;
 
-      const iconSvg = item.is_dir 
+      const isDir = item.is_dir !== undefined ? Boolean(item.is_dir) : (item.type === 'directory');
+      const iconSvg = isDir 
         ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>`
         : this.getFileIcon(item.extension);
-      const formattedSize = item.is_dir ? '-' : this.formatBytes(item.size);
-      const formattedDate = new Date(item.modified * 1000).toLocaleString();
+      const rawBytes = item.size !== undefined ? item.size : item.size_bytes;
+      const formattedSize = isDir ? '-' : (item.size_formatted || this.formatBytes(rawBytes));
+      
+      let formattedDate = '-';
+      if (typeof item.modified === 'number' && !isNaN(item.modified) && item.modified > 0) {
+        formattedDate = new Date(item.modified * 1000).toLocaleString();
+      } else if (item.modified_str) {
+        formattedDate = item.modified_str;
+      } else if (typeof item.modified === 'string') {
+        formattedDate = item.modified;
+      }
 
       row.innerHTML = `
         <td style="width: 38px; text-align: center;" class="file-select-cell">
@@ -299,11 +309,11 @@ const Files = {
         <td class="col-modified" style="color:var(--text-dim); font-size:0.8rem;">${formattedDate}</td>
         <td>
           <div class="file-actions">
-            ${!item.is_dir && this.isEditable(item.extension) ? 
+            ${!isDir && this.isEditable(item.extension) ? 
               `<button class="action-icon-btn btn-edit" title="${this.tr('t_file_tip_edit', 'Editar archivo')}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>` : ''}
-            ${!item.is_dir && item.extension === 'zip' ? 
+            ${!isDir && item.extension === 'zip' ? 
               `<button class="action-icon-btn btn-unzip" title="${this.tr('t_file_tip_unzip', 'Extraer ZIP')}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg></button>` : ''}
-            ${!item.is_dir ? 
+            ${!isDir ? 
               `<button class="action-icon-btn btn-dl" title="${this.tr('t_file_download', 'Descargar')}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>` : ''}
             <button class="action-icon-btn danger btn-del" title="${this.tr('t_file_delete', 'Eliminar')}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg></button>
             <button class="action-icon-btn mobile-more-btn btn-more" title="${this.tr('t_file_col_actions', 'Acciones')}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></button>
@@ -323,7 +333,7 @@ const Files = {
       // Name cell click
       const nameCell = row.querySelector('.file-name-cell');
       nameCell.addEventListener('click', () => {
-        if (item.is_dir) {
+        if (isDir) {
           this.loadDirectory(itemRelativePath);
         } else if (this.isEditable(item.extension)) {
           this.openEditor(itemRelativePath);
@@ -557,7 +567,7 @@ const Files = {
           <span>${this.tr('t_file_refresh', 'Refrescar')}</span>
         </button>
       `;
-    } else if (item.is_dir) {
+    } else if (item && (item.is_dir || item.type === 'directory')) {
       // Folder context menu
       menu.innerHTML = `
         <button type="button" class="context-menu-item" data-act="open">
@@ -893,11 +903,12 @@ const Files = {
   },
 
   formatBytes(bytes) {
-    if (bytes === 0) return '0 B';
+    if (!bytes || isNaN(bytes) || Number(bytes) <= 0) return '0 B';
     const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    const safeIdx = Math.min(i, sizes.length - 1);
+    return parseFloat((bytes / Math.pow(k, safeIdx)).toFixed(1)) + ' ' + sizes[safeIdx];
   },
 
   setupEditorListeners() {

@@ -73,7 +73,10 @@ args.append(f'-players={players}')
 
 args.append('-queryport=27015')
 
-if runtime.get('community', False) or str(ini.get('bShowPlayerList', '')).lower() == 'true':
+crossplay = str(ini.get('CrossplayPlatforms', '')).strip()
+is_crossplay = any(k in crossplay for k in ['Xbox', 'PS5', 'Mac'])
+
+if runtime.get('community', False) or str(ini.get('bShowPlayerList', '')).lower() == 'true' or is_crossplay:
     args.append('-publiclobby')
 
 if runtime.get('multithreading', True):

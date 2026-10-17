@@ -5,7 +5,7 @@
     <div class="banner-mobile-left">
       <span class="status-dot {{ 'offline' if not is_installed or server_status == 'OFFLINE' else server_status|lower }}" id="banner-mob-dot" style="width: 8px; height: 8px; border-radius: 50%; display: inline-block;"></span>
       <span class="banner-mob-title" id="banner-mob-title" style="font-weight: 600; font-size: 0.82rem;" data-i18n="banner_server_details">Detalles del Servidor</span>
-      <span class="banner-mob-pill" id="banner-mob-tps" style="color: #3fb950; font-size: 0.75rem; font-weight: 700; background: rgba(63, 185, 80, 0.1); border: 1px solid rgba(63, 185, 80, 0.3); border-radius: 4px; padding: 1px 6px;">-- FPS</span>
+      <span class="banner-mob-pill" id="banner-mob-crossplay" style="color: #58a6ff; font-size: 0.75rem; font-weight: 600; background: rgba(88, 166, 255, 0.1); border: 1px solid rgba(88, 166, 255, 0.3); border-radius: 4px; padding: 1px 6px;">Crossplay</span>
     </div>
     <div class="banner-mobile-right" id="banner-mobile-toggle-btn">
       <span class="banner-toggle-hint" id="banner-toggle-hint" style="font-size: 0.74rem; color: var(--text-dim);" data-i18n="banner_expand">Expandir</span>
@@ -61,8 +61,8 @@
         <span class="overview-val highlight-players" id="top-server-players">{{ (stats.online_players ~ ' / ' ~ stats.max_players) if is_installed and stats.max_players is defined else '0 / 32' }}</span>
       </div>
       <div class="overview-item">
-        <span class="overview-label" data-i18n="banner_tps_label">Tickrate (FPS):</span>
-        <span class="overview-val" id="top-server-tps" style="font-weight: 700; color: #3fb950;">-- FPS</span>
+        <span class="overview-label" data-i18n="banner_crossplay_label">Juego Cruzado:</span>
+        <span class="overview-val highlight-crossplay" id="top-server-crossplay" style="font-weight: 600; color: #58a6ff;">Steam / Xbox / PS5</span>
       </div>
     </div>
 

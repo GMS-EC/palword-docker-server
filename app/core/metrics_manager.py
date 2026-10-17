@@ -245,11 +245,19 @@ class MetricsManager:
         # Muestra formateada para canvas chart de metrics.js
         sample_point = {
             "timestamp": int(now),
+            "time_str": time_label,
             "cpu": round(cpu, 1),
+            "cpu_percent": round(cpu, 1),
             "ram": round(ram_pct, 1),
+            "ram_percent": round(ram_pct, 1),
+            "memory_percent": round(ram_pct, 1),
+            "memory_mb": mem_used_mb,
+            "disk_percent": round(disk_pct, 1),
+            "disk_used_mb": round(disk_used_mb, 1),
             "fps": round(server_fps, 1),
+            "server_fps": round(server_fps, 1),
             "players": online_players_count,
-            "memory_mb": mem_used_mb
+            "players_online": online_players_count
         }
         self.history_samples.append(sample_point)
 

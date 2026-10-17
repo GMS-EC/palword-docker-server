@@ -35,13 +35,13 @@
       </div>
 
       <!-- Players Table -->
-      <div class="table-container table-responsive" style="border: 1px solid #232b42; border-radius: 6px; overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%;">
-        <table class="data-table" style="width: 100%; min-width: 320px; border-collapse: collapse; font-size: 0.85rem;">
+      <div class="table-container table-responsive" style="border: 1px solid #232b42; border-radius: 6px; overflow: hidden; width: 100%;">
+        <table class="data-table" style="width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 0.82rem;">
           <thead>
-            <tr style="border-bottom: 1px solid #232b42; color: var(--text-dim); text-align: left;">
-              <th style="padding: 10px 12px; font-weight: 600;" data-i18n="t_player_col_player">Jugador</th>
-              <th style="padding: 10px 12px; font-weight: 600;" data-i18n="t_player_col_status">Estado</th>
-              <th style="padding: 10px 12px; font-weight: 600; text-align: right;" data-i18n="t_player_col_actions">Acciones</th>
+            <tr style="border-bottom: 1px solid #232b42; color: var(--text-dim); text-align: left; font-size: 0.74rem;">
+              <th style="padding: 8px 10px; font-weight: 600; width: 48%;" data-i18n="t_player_col_player">Jugador</th>
+              <th style="padding: 8px 6px; font-weight: 600; width: 25%;" data-i18n="t_player_col_status">Estado</th>
+              <th style="padding: 8px 10px; font-weight: 600; text-align: right; width: 27%;" data-i18n="t_player_col_actions">Acciones</th>
             </tr>
           </thead>
           <tbody id="players-table-body">
@@ -51,7 +51,7 @@
       </div>
 
       <!-- Empty State -->
-      <div id="players-empty-state" style="display: none; text-align: center; padding: 30px 10px; color: var(--text-dim); font-size: 0.85rem;" data-i18n="t_player_empty_players">
+      <div id="players-empty-state" style="display: none; text-align: center; padding: 24px 10px; color: var(--text-dim); font-size: 0.82rem;" data-i18n="t_player_empty_players">
         No hay jugadores registrados en el servidor aún.
       </div>
     </div>
@@ -75,14 +75,13 @@
       </div>
 
       <!-- Banned Players Table -->
-      <div class="table-container table-responsive" style="border: 1px solid #232b42; border-radius: 6px; overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%;">
-        <table class="data-table" style="width: 100%; min-width: 320px; border-collapse: collapse; font-size: 0.85rem;">
+      <div class="table-container table-responsive" style="border: 1px solid #232b42; border-radius: 6px; overflow: hidden; width: 100%;">
+        <table class="data-table" style="width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 0.82rem;">
           <thead>
-            <tr style="border-bottom: 1px solid #232b42; color: var(--text-dim); text-align: left;">
-              <th style="padding: 10px 12px; font-weight: 600;" data-i18n="t_player_col_player">Jugador</th>
-              <th style="padding: 10px 12px; font-weight: 600;" data-i18n="t_player_col_status">Estado</th>
-              <th style="padding: 10px 12px; font-weight: 600;" data-i18n="t_player_col_reason">Motivo</th>
-              <th style="padding: 10px 12px; font-weight: 600; text-align: right;" data-i18n="t_player_col_actions">Acciones</th>
+            <tr style="border-bottom: 1px solid #232b42; color: var(--text-dim); text-align: left; font-size: 0.74rem;">
+              <th style="padding: 8px 10px; font-weight: 600; width: 42%;" data-i18n="t_player_col_player">Jugador</th>
+              <th style="padding: 8px 6px; font-weight: 600; width: 33%;" data-i18n="t_player_col_reason">Motivo</th>
+              <th style="padding: 8px 10px; font-weight: 600; text-align: right; width: 25%;" data-i18n="t_player_col_actions">Acciones</th>
             </tr>
           </thead>
           <tbody id="banned-table-body">

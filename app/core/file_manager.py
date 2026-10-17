@@ -116,9 +116,13 @@ class FileManager:
                 items.append({
                     "name": entry.name,
                     "type": "directory" if is_dir else "file",
-                    "size_formatted": size_str,
+                    "is_dir": is_dir,
+                    "size": size_bytes,
                     "size_bytes": size_bytes,
-                    "modified": mod_time,
+                    "size_formatted": size_str,
+                    "modified": int(stat.st_mtime),
+                    "modified_timestamp": int(stat.st_mtime),
+                    "modified_str": mod_time,
                     "extension": ext,
                     "is_special": False,
                     "path": rel
@@ -127,7 +131,7 @@ class FileManager:
                 continue
 
         # Ordenar: directorios primero, luego archivos alfabéticamente
-        items.sort(key=lambda x: (0 if x["type"] == "directory" else 1, x["name"].lower()))
+        items.sort(key=lambda x: (0 if x["is_dir"] else 1, x["name"].lower()))
 
         return {
             "current_path": (relative_path or "").replace("\\", "/"),
