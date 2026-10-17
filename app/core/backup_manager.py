@@ -224,9 +224,18 @@ class BackupManager:
                 pre_restore = self.saved_dir.parent / f"Saved_pre_restore_{int(time.time())}"
                 shutil.move(str(self.saved_dir), str(pre_restore))
 
-            self.saved_dir.parent.mkdir(parents=True, exist_ok=True)
+            dest_root = self.saved_dir.parent.resolve()
+            dest_root.mkdir(parents=True, exist_ok=True)
             with tarfile.open(archive_path, "r:gz") as tar:
-                tar.extractall(path=self.saved_dir.parent)
+                # Protección contra vulnerabilidades Tar Slip / Path Traversal
+                for member in tar.getmembers():
+                    member_target = (dest_root / member.name).resolve()
+                    if not self._is_subpath(member_target, dest_root):
+                        raise ValueError(f"Ruta no permitida detectada en el archivo de respaldo: {member.name}")
+                if hasattr(tarfile, 'data_filter'):
+                    tar.extractall(path=dest_root, filter='data')
+                else:
+                    tar.extractall(path=dest_root)
 
         try:
             await loop.run_in_executor(None, _extract)

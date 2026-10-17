@@ -25,7 +25,7 @@ from app.config import settings, BASE_DIR
 from app.core.security import (
     create_session_token, verify_session_token, verify_admin_credentials, is_authenticated,
     require_auth, check_login_rate_limit, record_failed_login, reset_failed_login,
-    SESSION_COOKIE_NAME
+    SESSION_COOKIE_NAME, get_client_ip
 )
 from app.core.process_manager import process_manager
 from app.core.pal_api_client import pal_api_client
@@ -318,7 +318,7 @@ async def login_submit(
     username: str = Form(...),
     password: str = Form(...)
 ):
-    client_ip = request.client.host if request.client else "unknown"
+    client_ip = get_client_ip(request)
     if check_login_rate_limit(client_ip):
         return templates.TemplateResponse(
             request=request,
@@ -398,7 +398,7 @@ async def api_auth_logout(response: Response):
 
 @app.post("/api/auth/login")
 async def api_auth_login(req: LoginRequest, request: Request, response: Response):
-    client_ip = request.client.host if request.client else "unknown"
+    client_ip = get_client_ip(request)
     if check_login_rate_limit(client_ip):
         return JSONResponse(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,

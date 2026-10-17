@@ -16,6 +16,16 @@ LOCKOUT_SECONDS = 300  # 5 minutos
 def _clean_ip(ip: str) -> str:
     return ip.strip() if ip else "unknown"
 
+def get_client_ip(request: Request) -> str:
+    """Extrae la IP real del cliente soportando Cloudflare y proxies reversos comunes."""
+    cf_ip = request.headers.get("cf-connecting-ip")
+    if cf_ip:
+        return cf_ip.strip()
+    x_forwarded = request.headers.get("x-forwarded-for")
+    if x_forwarded:
+        return x_forwarded.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
+
 def check_login_rate_limit(client_ip: str) -> bool:
     """Verifica si la IP excedió los intentos fallidos de login permitidos."""
     ip = _clean_ip(client_ip)
