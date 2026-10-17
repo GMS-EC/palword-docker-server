@@ -394,16 +394,25 @@ const Console = {
     // Memory (relative to allocated server memory)
     const memVal = document.getElementById('stat-mem-val');
     const memBar = document.getElementById('stat-mem-bar');
-    const assignedMem = stats.assigned_memory_mb || 2048;
-    const currentMem = stats.memory_mb || 0;
-    const memPct = stats.memory_percent !== undefined ? Number(stats.memory_percent) : Math.round((currentMem / assignedMem) * 100);
+    const assignedMem = stats.assigned_memory_mb || stats.assigned_ram_mb || 8192;
+    const currentMem = stats.memory_mb !== undefined ? stats.memory_mb : (stats.current_ram_mb || 0);
+    const memPct = stats.memory_percent !== undefined ? Number(stats.memory_percent) : (stats.ram_percent !== undefined ? Number(stats.ram_percent) : Math.round((currentMem / assignedMem) * 100));
 
     if (memVal) {
-      memVal.textContent = `${Math.round(currentMem)} MB / ${Math.round(assignedMem)} MB (${memPct}%)`;
+      if (assignedMem >= 1024) {
+        memVal.textContent = `${(currentMem / 1024).toFixed(1)} GB / ${(assignedMem / 1024).toFixed(1)} GB (${memPct}%)`;
+      } else {
+        memVal.textContent = `${Math.round(currentMem)} MB / ${Math.round(assignedMem)} MB (${memPct}%)`;
+      }
     }
     if (memBar) {
       memBar.style.width = `${Math.min(memPct, 100)}%`;
       memBar.className = memPct > 85 ? 'progress-bar-fill danger' : (memPct > 65 ? 'progress-bar-fill warning' : 'progress-bar-fill');
+    }
+
+    // Forward stats to Metrics tab for instant real-time synchronization
+    if (typeof Metrics !== 'undefined' && Metrics.updateFromStats) {
+      Metrics.updateFromStats(stats);
     }
 
     // Disk Usage

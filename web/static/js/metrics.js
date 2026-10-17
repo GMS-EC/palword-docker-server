@@ -12,23 +12,98 @@ const Metrics = {
     if (this._initialized) return;
     this._initialized = true;
     this.canvas = document.getElementById('metrics-chart-canvas');
-    if (!this.canvas) return;
-    this.ctx = this.canvas.getContext('2d');
+    if (this.canvas) {
+      this.ctx = this.canvas.getContext('2d');
 
-    // Setup mouse hover for interactive tooltips
-    this.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
-    this.canvas.addEventListener('mouseleave', () => this.handleMouseLeave());
+      // Setup mouse hover for interactive tooltips
+      this.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
+      this.canvas.addEventListener('mouseleave', () => this.handleMouseLeave());
 
-    // Window / container resize observer for crisp DPI rendering
-    if (window.ResizeObserver) {
-      const ro = new ResizeObserver(() => this.redraw());
-      ro.observe(this.canvas.parentElement);
-    } else {
-      window.addEventListener('resize', () => this.redraw());
+      // Window / container resize observer for crisp DPI rendering
+      if (window.ResizeObserver) {
+        const ro = new ResizeObserver(() => this.redraw());
+        ro.observe(this.canvas.parentElement);
+      } else {
+        window.addEventListener('resize', () => this.redraw());
+      }
     }
 
     // Refresh dynamic KPI/toggle strings when the panel language changes (no toasts)
     window.addEventListener('dockraft:language_changed', () => this.refreshLanguage());
+
+    // Hydrate initial metrics values from window.__INITIAL_STATS__ if present
+    if (typeof window !== 'undefined' && window.__INITIAL_STATS__) {
+      this.updateFromStats(window.__INITIAL_STATS__);
+    }
+  },
+
+  updateFromStats(stats) {
+    if (!stats) return;
+    if (!this.summary) {
+      this.summary = {
+        current_status: stats.status || 'OFFLINE',
+        current_cpu: 0,
+        peak_cpu: 0,
+        avg_cpu: 0,
+        current_ram_mb: 0,
+        current_ram_percent: 0,
+        peak_ram_mb: 0,
+        avg_ram_mb: 0,
+        assigned_ram_mb: 8192,
+        disk_used_mb: 10240,
+        disk_limit_mb: 102400,
+        disk_percent: 10.0,
+        current_players: 0,
+        peak_players: 0,
+        uptime_seconds: 0
+      };
+    }
+
+    const curMem = stats.memory_mb !== undefined ? Number(stats.memory_mb) : (stats.current_ram_mb !== undefined ? Number(stats.current_ram_mb) : undefined);
+    const assignedMem = stats.assigned_memory_mb !== undefined ? Number(stats.assigned_memory_mb) : (stats.assigned_ram_mb !== undefined ? Number(stats.assigned_ram_mb) : undefined);
+    const memPct = stats.memory_percent !== undefined ? Number(stats.memory_percent) : (stats.ram_percent !== undefined ? Number(stats.ram_percent) : undefined);
+    const cpuPct = stats.cpu_percent !== undefined ? Number(stats.cpu_percent) : undefined;
+
+    if (cpuPct !== undefined) {
+      this.summary.current_cpu = cpuPct;
+      if (this.summary.peak_cpu === undefined || cpuPct > this.summary.peak_cpu) {
+        this.summary.peak_cpu = cpuPct;
+      }
+    }
+
+    if (curMem !== undefined) {
+      this.summary.current_mem_mb = curMem;
+      this.summary.current_ram_mb = curMem;
+      if (this.summary.peak_ram_mb === undefined || curMem > this.summary.peak_ram_mb) {
+        this.summary.peak_ram_mb = curMem;
+      }
+      if (this.summary.peak_mem_mb === undefined || curMem > this.summary.peak_mem_mb) {
+        this.summary.peak_mem_mb = curMem;
+      }
+    }
+
+    if (assignedMem !== undefined && assignedMem > 0) {
+      this.summary.assigned_mem_mb = assignedMem;
+      this.summary.assigned_ram_mb = assignedMem;
+    }
+
+    if (memPct !== undefined) {
+      this.summary.current_ram_percent = memPct;
+      this.summary.ram_percent = memPct;
+    } else if (this.summary.assigned_ram_mb > 0 && this.summary.current_ram_mb !== undefined) {
+      this.summary.current_ram_percent = Math.round((this.summary.current_ram_mb / this.summary.assigned_ram_mb) * 100);
+      this.summary.ram_percent = this.summary.current_ram_percent;
+    }
+
+    if (stats.disk_used_mb !== undefined) this.summary.disk_used_mb = Number(stats.disk_used_mb);
+    if (stats.disk_limit_mb !== undefined) this.summary.disk_limit_mb = Number(stats.disk_limit_mb);
+    if (stats.disk_percent !== undefined) this.summary.disk_percent = Number(stats.disk_percent);
+    if (stats.status !== undefined) this.summary.current_status = stats.status;
+    if (stats.uptime_seconds !== undefined) this.summary.uptime_seconds = stats.uptime_seconds;
+    if (stats.uptime_formatted !== undefined) this.summary.uptime_formatted = stats.uptime_formatted;
+    if (stats.online_players !== undefined) this.summary.current_players = stats.online_players;
+
+    this.updateKPIs();
   },
 
   _t(key, fallback) {
@@ -65,7 +140,10 @@ const Metrics = {
   },
 
   async loadMetrics() {
-    if (!this.canvas) this.init();
+    if (!this.canvas) {
+      this._initialized = false;
+      this.init();
+    }
     await this.fetchData();
     this.startLivePolling();
   },
@@ -162,12 +240,34 @@ const Metrics = {
     // RAM KPI
     const ramVal = document.getElementById('metric-kpi-ram-val');
     const ramPct = document.getElementById('metric-kpi-ram-pct');
+    const ramBar = document.getElementById('metric-kpi-ram-bar');
     const ramPeak = document.getElementById('metric-kpi-ram-peak');
     const ramAssigned = document.getElementById('metric-kpi-ram-assigned');
-    if (ramVal) ramVal.textContent = `${Math.round(s.current_ram_mb || 0)} MB`;
-    if (ramPct) ramPct.textContent = `(${s.current_ram_percent || 0}%)`;
-    if (ramPeak) ramPeak.textContent = `${Math.round(s.peak_ram_mb || 0)} MB`;
-    if (ramAssigned) ramAssigned.textContent = `${Math.round(s.assigned_ram_mb || 2048)} MB`;
+
+    const curMemMb = s.current_ram_mb !== undefined ? s.current_ram_mb : (s.current_mem_mb !== undefined ? s.current_mem_mb : (s.memory_mb || 0));
+    const assignedMemMb = s.assigned_ram_mb !== undefined ? s.assigned_ram_mb : (s.assigned_mem_mb !== undefined ? s.assigned_mem_mb : (s.assigned_memory_mb || 8192));
+    const peakMemMb = s.peak_ram_mb !== undefined ? s.peak_ram_mb : (s.peak_mem_mb !== undefined ? s.peak_mem_mb : curMemMb);
+    const rawPct = s.current_ram_percent !== undefined ? s.current_ram_percent : (s.ram_percent !== undefined ? s.ram_percent : s.memory_percent);
+    const ramPercent = rawPct !== undefined ? Number(rawPct) : (assignedMemMb > 0 ? (curMemMb / assignedMemMb) * 100 : 0);
+
+    const formatRam = (mb) => {
+      const val = Number(mb) || 0;
+      if (val >= 1024) {
+        return (val / 1024).toFixed(1) + ' GB';
+      }
+      return Math.round(val) + ' MB';
+    };
+
+    if (ramVal) ramVal.textContent = curMemMb > 0 ? formatRam(curMemMb) : (isOnline ? '0 MB' : '--');
+    if (ramPct) ramPct.textContent = `(${ramPercent.toFixed(1)}%)`;
+    if (ramPeak) ramPeak.textContent = formatRam(peakMemMb);
+    if (ramAssigned) ramAssigned.textContent = formatRam(assignedMemMb);
+    if (ramBar) {
+      ramBar.style.width = `${Math.min(100, Math.max(0, ramPercent))}%`;
+      ramBar.className = 'metric-progress-fill';
+      if (ramPercent >= 90) ramBar.classList.add('danger');
+      else if (ramPercent >= 75) ramBar.classList.add('warning');
+    }
 
     // Disk Space KPI & Alert
     const diskVal = document.getElementById('metric-kpi-disk-val');
@@ -342,7 +442,7 @@ const Metrics = {
 
     // Draw Series: RAM MB (Scaled relative to assigned RAM)
     if (showRamMb) {
-      const assigned = this.summary?.assigned_ram_mb || 2048;
+      const assigned = this.summary?.assigned_ram_mb || this.summary?.assigned_mem_mb || 8192;
       this.drawSeries(ctx, this.history, s => (((s.memory_mb || 0) / assigned) * 100), 100, '#60a5fa', 'rgba(96, 165, 250, 0.08)', padding, chartH, stepX);
     }
 
@@ -443,7 +543,8 @@ const Metrics = {
     const diskUsed = sample.disk_used_mb || 0;
     const diskFormatted = diskUsed >= 1024 ? (diskUsed / 1024).toFixed(1) + ' GB' : Math.round(diskUsed) + ' MB';
     const cpuVal = (sample.cpu_percent !== undefined ? sample.cpu_percent : (sample.cpu || 0)).toFixed(1);
-    const ramVal = Math.round(sample.memory_mb || 0);
+    const ramMb = Math.round(sample.memory_mb || 0);
+    const ramFormatted = ramMb >= 1024 ? (ramMb / 1024).toFixed(1) + ' GB' : ramMb + ' MB';
     const ramPct = (sample.memory_percent !== undefined ? sample.memory_percent : (sample.ram_percent !== undefined ? sample.ram_percent : (sample.ram || 0)));
     const playersVal = sample.players_online !== undefined ? sample.players_online : (sample.players || 0);
 
@@ -454,7 +555,7 @@ const Metrics = {
       </div>
       <div style="display: flex; justify-content: space-between; gap: 14px; color: #cbd5e1;">
         <span style="color: #38bdf8; font-weight: 600;">${this._t('t_metric_tt_ram', 'RAM:')}</span>
-        <span style="font-family: var(--font-mono);">${ramVal} MB (${ramPct}%)</span>
+        <span style="font-family: var(--font-mono);">${ramFormatted} (${ramPct}%)</span>
       </div>
       <div style="display: flex; justify-content: space-between; gap: 14px; color: #cbd5e1;">
         <span style="color: #06b6d4; font-weight: 600;">${this._t('t_metric_tt_disk', 'Disco:')}</span>
@@ -485,3 +586,12 @@ const Metrics = {
     this.redraw();
   }
 };
+
+// Auto-initialize Metrics on script load so initial state is bound without waiting for tab click
+if (typeof document !== 'undefined') {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => Metrics.init());
+  } else {
+    Metrics.init();
+  }
+}

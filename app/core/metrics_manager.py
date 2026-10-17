@@ -266,13 +266,21 @@ class MetricsManager:
 
     def get_current_metrics(self) -> Dict[str, Any]:
         if not self._last_pal_metrics:
+            cg_limit = get_cgroup_memory_limit()
+            if cg_limit:
+                host_mem_mb = int(cg_limit / (1024**2))
+                host_mem_gb = round(cg_limit / (1024**3), 1)
+            else:
+                vm = psutil.virtual_memory()
+                host_mem_mb = int(vm.total / (1024**2))
+                host_mem_gb = round(vm.total / (1024**3), 1)
             return {
                 "cpu_percent": 0.0,
                 "ram_percent": 0.0,
                 "memory_mb": 0,
-                "assigned_memory_mb": 16384,
+                "assigned_memory_mb": host_mem_mb,
                 "ram_used_gb": 0.0,
-                "ram_total_gb": 16.0,
+                "ram_total_gb": host_mem_gb,
                 "pal_cpu_percent": 0.0,
                 "pal_ram_gb": 0.0,
                 "server_fps": 0.0,
@@ -301,7 +309,7 @@ class MetricsManager:
         curr = self.get_current_metrics()
         samples = list(self.history_samples)
 
-        avg_cpu = round(sum(s["cpu"] for s in samples) / max(1, len(samples)), 1) if samples else 0.0
+        avg_cpu = round(sum(s.get("cpu", 0) for s in samples) / max(1, len(samples)), 1) if samples else 0.0
         avg_ram = round(sum(s.get("memory_mb", 0) for s in samples) / max(1, len(samples))) if samples else 0
 
         fps_val = curr.get("server_fps", 0.0)
@@ -311,15 +319,25 @@ class MetricsManager:
         s = uptime_sec % 60
         uptime_clock = f"{h:02d}:{m:02d}:{s:02d}"
 
+        mem_mb = curr.get("memory_mb", 0)
+        assigned_mb = curr.get("assigned_memory_mb", 8192)
+        ram_pct = curr.get("ram_percent", round((mem_mb / max(1, assigned_mb)) * 100, 1))
+
         summary = {
             "current_status": process_manager.get_status(),
             "current_cpu": curr.get("cpu_percent", 0.0),
             "peak_cpu": round(self.peak_cpu, 1),
             "avg_cpu": avg_cpu,
-            "current_mem_mb": curr.get("memory_mb", 0),
+            "current_mem_mb": mem_mb,
+            "current_ram_mb": mem_mb,
+            "current_ram_percent": ram_pct,
+            "ram_percent": ram_pct,
             "peak_mem_mb": self.peak_mem_mb,
+            "peak_ram_mb": self.peak_mem_mb,
             "avg_mem_mb": avg_ram,
-            "assigned_mem_mb": curr.get("assigned_memory_mb", 16384),
+            "avg_ram_mb": avg_ram,
+            "assigned_mem_mb": assigned_mb,
+            "assigned_ram_mb": assigned_mb,
             "disk_used_mb": curr.get("disk_used_mb", 10240),
             "disk_limit_mb": curr.get("disk_limit_mb", 102400),
             "disk_percent": curr.get("disk_percent", 10.0),
@@ -327,12 +345,7 @@ class MetricsManager:
             "peak_players": self.peak_players,
             "uptime_seconds": uptime_sec,
             "uptime_formatted": curr.get("uptime_formatted", "00h 00m 00s"),
-            "uptime_clock": uptime_clock,
-            "tps": {
-                "1m": fps_val,
-                "5m": fps_val,
-                "15m": fps_val
-            }
+            "uptime_clock": uptime_clock
         }
         return {
             "history": samples,
