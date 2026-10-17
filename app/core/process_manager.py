@@ -378,11 +378,12 @@ class ProcessManager:
         return await self.start_server()
 
     async def install_server(self, validate: bool = True) -> Dict[str, Any]:
-        """Instala o actualiza el servidor Palworld usando SteamCMD."""
+        """Instala o actualiza el servidor Palworld usando SteamCMD con reintento automático."""
         if self.get_status() in ("RUNNING", "STARTING", "INSTALLING"):
             return {"success": False, "message": f"No se puede instalar mientras el servidor está en estado {self.status}."}
 
         self.status = "INSTALLING"
+        await self.broadcast_status("INSTALLING")
         await self.broadcast_log("========================================================================")
         await self.broadcast_log(" INICIANDO DESCARGA / ACTUALIZACIÓN DE PALWORLD SERVER CON STEAMCMD ")
         await self.broadcast_log(" Palworld Dedicated Server (SteamCMD)                               ")
@@ -390,13 +391,11 @@ class ProcessManager:
 
         steamcmd_exe = "/home/steam/steamcmd/steamcmd.sh"
         if not os.path.exists(steamcmd_exe):
-            # Fallback en Windows / desarrollo local
             steamcmd_exe = shutil.which("steamcmd") or "steamcmd"
 
+        # Comando estándar oficial de SteamCMD para Palworld Linux
         cmd = [
             steamcmd_exe,
-            "+@sSteamCmdForcePlatformType", "linux",
-            "+@sSteamCmdForcePlatformBitness", "64",
             "+force_install_dir", str(settings.palworld_data_dir),
             "+login", "anonymous",
             "+app_update", "2394010"
@@ -405,37 +404,58 @@ class ProcessManager:
             cmd.append("validate")
         cmd.append("+quit")
 
-        try:
-            proc = await asyncio.create_subprocess_exec(
-                *cmd,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.STDOUT
-            )
+        max_attempts = 2
+        for attempt in range(1, max_attempts + 1):
+            if attempt > 1:
+                await self.broadcast_log(f"[SteamCMD] Reintentando descarga e instalación (Intento {attempt}/{max_attempts})...")
+                await asyncio.sleep(3)
 
-            while proc.stdout and not proc.stdout.at_eof():
-                line = await proc.stdout.readline()
-                if not line:
-                    break
-                await self.broadcast_log(f"[SteamCMD] {line.decode('utf-8', errors='replace').rstrip()}")
+            try:
+                proc = await asyncio.create_subprocess_exec(
+                    *cmd,
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.STDOUT
+                )
 
-            rc = await proc.wait()
-            if rc == 0:
-                await self.broadcast_log("========================================================================")
-                await self.broadcast_log(" INSTALACIÓN DE PALWORLD DEDICATED SERVER FINALIZADA CORRECTAMENTE ")
-                await self.broadcast_log("========================================================================")
+                while proc.stdout and not proc.stdout.at_eof():
+                    line = await proc.stdout.readline()
+                    if not line:
+                        break
+                    await self.broadcast_log(f"[SteamCMD] {line.decode('utf-8', errors='replace').rstrip()}")
+
+                rc = await proc.wait()
+                if rc == 0:
+                    await self.broadcast_log("========================================================================")
+                    await self.broadcast_log(" INSTALACIÓN DE PALWORLD DEDICATED SERVER FINALIZADA CORRECTAMENTE ")
+                    await self.broadcast_log("========================================================================")
+                    self.status = "OFFLINE"
+                    await self.broadcast_status("OFFLINE")
+                    return {"success": True, "message": "Instalación de Palworld completada con éxito."}
+                else:
+                    if attempt < max_attempts:
+                        await self.broadcast_log(f"[SteamCMD] Intento {attempt} finalizó con código {rc}. Reintentando automáticamente tras actualización de SteamCMD...")
+                        continue
+
+                    self.status = "OFFLINE"
+                    await self.broadcast_status("OFFLINE")
+                    await self.broadcast_log(f"[SteamCMD] Error: El proceso terminó con código {rc}")
+                    return {"success": False, "message": f"SteamCMD falló con código {rc}"}
+            except FileNotFoundError:
                 self.status = "OFFLINE"
-                return {"success": True, "message": "Instalación de Palworld completada con éxito."}
-            else:
+                await self.broadcast_status("OFFLINE")
+                await self.broadcast_log("[SteamCMD] Binario 'steamcmd' no encontrado en el sistema. Asegúrate de ejecutar dentro del contenedor Docker.")
+                return {"success": False, "message": "SteamCMD no encontrado en el sistema."}
+            except Exception as e:
+                if attempt < max_attempts:
+                    await self.broadcast_log(f"[SteamCMD] Excepción en intento {attempt}: {e}. Reintentando...")
+                    continue
                 self.status = "OFFLINE"
-                await self.broadcast_log(f"[SteamCMD] Error: El proceso terminó con código {rc}")
-                return {"success": False, "message": f"SteamCMD falló con código {rc}"}
-        except FileNotFoundError:
-            self.status = "OFFLINE"
-            await self.broadcast_log("[SteamCMD] Binario 'steamcmd' no encontrado en el sistema. Asegúrate de ejecutar dentro del contenedor Docker.")
-            return {"success": False, "message": "SteamCMD no encontrado en el sistema."}
-        except Exception as e:
-            self.status = "OFFLINE"
-            await self.broadcast_log(f"[SteamCMD] Error durante la instalación: {e}")
-            return {"success": False, "message": str(e)}
+                await self.broadcast_status("OFFLINE")
+                await self.broadcast_log(f"[SteamCMD] Error durante la instalación: {e}")
+                return {"success": False, "message": str(e)}
+
+        self.status = "OFFLINE"
+        await self.broadcast_status("OFFLINE")
+        return {"success": False, "message": "Error desconocido en la instalación."}
 
 process_manager = ProcessManager()
