@@ -5,7 +5,7 @@
     </td>
     <td valign="middle">
       <h2>🎮 Palworld Dedicated Server & Web Manager in Docker</h2>
-      <p><strong>Panel web ultra-ligero y automatizado para administrar una única instancia dedicada de servidor de Palworld (SteamCMD AppID 2394010).</strong></p>
+      <p><strong>Panel web ultra-ligero y automatizado para administrar una única instancia dedicada de servidor de Palworld.</strong></p>
       <p>
         <a href="https://hub.docker.com/r/marcusm99/palword-docker-server"><img src="https://img.shields.io/badge/docker%20hub-marcusm99%2Fpalword--docker--server-0db7ed?style=flat-square&logo=docker" alt="Docker Hub" /></a>
         <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL%20v3-007ec6?style=flat-square" alt="License" /></a>
@@ -45,7 +45,7 @@ Al enfocarse exclusivamente en mantener y optimizar **una única instancia de se
 ### ✨ Características Principales
 
 * 🕹️ **Instalación y Actualización en 1 Clic con SteamCMD**:
-  * Descarga automática de los binarios oficiales de Palworld (SteamCMD AppID `2394010`).
+  * Descarga automática de los binarios oficiales de Palworld a través de SteamCMD.
   * Validación de integridad de archivos (`validate`) para corregir descargas corruptas.
   * Optimización multihilo activada por defecto (`-useperfthreads`, `-NoAsyncLoadingThread`, `-UseMultithreadForDS`).
   * Selector de Servidor Comunitario Público (`-publiclobby`).
@@ -228,7 +228,7 @@ By focusing strictly on hosting, maintaining, and optimizing **a single server i
 ### ✨ Key Features
 
 * 🕹️ **1-Click SteamCMD Installer & Integrity Checker**:
-  * Automatic download of official Palworld server files (SteamCMD AppID `2394010`).
+  * Automatic download of official Palworld server files via SteamCMD.
   * File validation (`validate`) to automatically repair missing or corrupted assets.
   * Multi-threaded engine optimization enabled out-of-the-box (`-useperfthreads`, `-NoAsyncLoadingThread`, `-UseMultithreadForDS`).
   * Community Public Lobby toggle (`-publiclobby`).

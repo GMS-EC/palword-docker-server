@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **Palworld Dedicated Server Engine**:
-  - Full native 64-bit Linux server support managed directly via official SteamCMD (AppID `2394010`).
+  - Full native 64-bit Linux server support managed directly via official SteamCMD.
   - Automated initial download, installation, and file verification.
   - Multi-threaded performance flags (`-useperfthreads`, `-NoAsyncLoadingThread`, `-UseMultithreadForDS`).
   - Support for public community listing (`-publiclobby`).

@@ -107,7 +107,7 @@ class WebhookManager:
             "name": name,
             "port": port,
             "type": "Palworld Dedicated Server",
-            "version": "AppID 2394010"
+            "version": "SteamCMD"
         }
 
     def _build_default_fields(self, event_type: str, color: int = 0x388bfd) -> List[Dict[str, Any]]:

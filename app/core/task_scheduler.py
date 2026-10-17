@@ -237,7 +237,7 @@ class TaskScheduler:
                     result["message"] = "Comando vacío omitido."
 
             elif action == "check_updates":
-                result["message"] = "Verificación de actualizaciones de SteamCMD (AppID 2394010) completada."
+                result["message"] = "Verificación de actualizaciones de SteamCMD completada."
 
             else:
                 result["status"] = "error"

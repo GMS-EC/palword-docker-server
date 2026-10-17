@@ -10,7 +10,7 @@ echo "[Palworld Server Manager] Verificando instalación de Palworld Dedicated S
 # 1. Si no existe el script PalServer.sh, instalar automáticamente
 if [ ! -f "${PAL_ROOT}/PalServer.sh" ]; then
     if [ "${UPDATE_ON_START:-true}" = "true" ] || [ "${AUTO_INSTALL:-true}" = "true" ]; then
-        echo "[Palworld Server Manager] Servidor no detectado. Iniciando instalación de Palworld (SteamCMD AppID 2394010)..."
+        echo "[Palworld Server Manager] Servidor no detectado. Iniciando instalación de Palworld vía SteamCMD..."
         steamcmd +@sSteamCmdForcePlatformType linux +@sSteamCmdForcePlatformBitness 64 +force_install_dir "$PAL_ROOT" +login anonymous +app_update 2394010 validate +quit
     else
         echo "[Palworld Server Manager] [AVISO] El servidor de Palworld no está instalado aún."

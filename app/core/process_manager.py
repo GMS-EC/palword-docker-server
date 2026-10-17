@@ -16,7 +16,7 @@ from app.core.pal_api_client import pal_api_client
 class ProcessManager:
     """
     Controlador del ciclo de vida del servidor dedicado de Palworld.
-    Maneja la instalación bajo demanda vía SteamCMD (App ID 2394010), el inicio,
+    Maneja la instalación bajo demanda vía SteamCMD, el inicio,
     la detención segura con guardado de mundo, el monitoreo de logs en tiempo real
     vía WebSockets y la ejecución de comandos.
     """
@@ -364,14 +364,14 @@ class ProcessManager:
         return await self.start_server()
 
     async def install_server(self, validate: bool = True) -> Dict[str, Any]:
-        """Instala o actualiza el servidor Palworld usando SteamCMD (App ID 2394010)."""
+        """Instala o actualiza el servidor Palworld usando SteamCMD."""
         if self.get_status() in ("RUNNING", "STARTING", "INSTALLING"):
             return {"success": False, "message": f"No se puede instalar mientras el servidor está en estado {self.status}."}
 
         self.status = "INSTALLING"
         await self.broadcast_log("========================================================================")
         await self.broadcast_log(" INICIANDO DESCARGA / ACTUALIZACIÓN DE PALWORLD SERVER CON STEAMCMD ")
-        await self.broadcast_log(" AppID: 2394010 (Palworld Dedicated Server)                             ")
+        await self.broadcast_log(" Palworld Dedicated Server (SteamCMD)                               ")
         await self.broadcast_log("========================================================================")
 
         steamcmd_exe = "/home/steam/steamcmd/steamcmd.sh"

@@ -1,4 +1,4 @@
-// Palworld Server Installer Script (SteamCMD AppID 2394010)
+// Palworld Server Installer Script
 const Installer = {
   isInstalled: false,
   isInstalling: false,
@@ -51,7 +51,7 @@ const Installer = {
       row.style.color = '#f85149';
     } else if (line.includes('Success!') || line.includes('FINALIZADA')) {
       row.style.color = '#3fb950';
-    } else if (line.includes('AppID: 2394010') || line.includes('INICIANDO')) {
+    } else if (line.includes('SteamCMD') || line.includes('INICIANDO')) {
       row.style.color = '#38bdf8';
     }
 
@@ -115,7 +115,7 @@ const Installer = {
     if (btn) btn.disabled = true;
     if (btnText) btnText.textContent = 'Descargando archivos con SteamCMD...';
 
-    App.showToast('Iniciando descarga de Palworld Server (AppID 2394010)... Observa el registro inferior.', 'info');
+    App.showToast('Iniciando descarga de Palworld Server... Observa el registro inferior.', 'info');
     this.appendLog('[Sistema] Solicitud de instalación enviada a SteamCMD...');
 
     try {

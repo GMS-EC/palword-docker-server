@@ -239,7 +239,7 @@ def _build_server_stats_dict() -> Dict[str, Any]:
         "motd": server_desc,
         "server_fps": metrics.get("server_fps", 0.0),
         "server_type": "palworld",
-        "server_version": "Steam AppID 2394010",
+        "server_version": "SteamCMD",
         "app_version": get_app_version()
     }
 
