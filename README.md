@@ -42,16 +42,6 @@ Al enfocarse exclusivamente en mantener y optimizar **una única instancia de se
 
 ---
 
-### 📊 Comparativa de Consumo Real de Memoria RAM (Prueba Empírica)
-
-| Panel de Control | Consumo en Reposo (Idle) | Tiempo de Arranque | Enfoque de Servidores |
-| :--- | :---: | :---: | :--- |
-| **Palworld Server Manager** | **~50–75 MB** (~0 % CPU) | **~1 segundo** | **Instancia única dedicada (ultra-ligero y optimizado)** |
-| Pterodactyl Panel + Wings | ~800 MB a 1.2 GB | Múltiples servicios | Infraestructura distribuida pesada (PHP, Nginx, DB, Redis, Wings) |
-| Entorno Virtual Windows / Wine | ~2.0 GB a 3.5 GB | ~60 a 90 segundos | Emulación pesada con sobrecarga de sistema operativo invitado |
-
----
-
 ### ✨ Características Principales
 
 * 🕹️ **Instalación y Actualización en 1 Clic con SteamCMD**:
@@ -98,7 +88,7 @@ Al enfocarse exclusivamente en mantener y optimizar **una única instancia de se
 
 ### ⚡ Rendimiento del Servidor y FPS (Server Tickrate)
 
-El servidor dedicado de Palworld ejecuta su ciclo de físicas, inteligencia artificial de Pals y combate en torno a **60 FPS / Ticks por segundo**. Monitorear los FPS en vivo permite diagnosticar problemas de rendimiento antes de que los jugadores experimenten retrasos.
+El servidor dedicado de Palworld ejecuta su ciclo de físicas, inteligencia artificial de Pals y combate en torno a **60 FPS / Ticks por segundo**. El panel web consulta y grafica esta información en tiempo real directamente desde el endpoint oficial de telemetría de Palworld (`GET /v1/api/metrics`), donde el motor Unreal Engine 5 reporta el valor exacto de `serverfps` y `serverframetime`. Monitorear los FPS en vivo permite diagnosticar problemas de rendimiento antes de que los jugadores experimenten retrasos.
 
 | Server FPS | Estado | Experiencia en el Juego |
 | :---: | :---: | :--- |
@@ -235,16 +225,6 @@ By focusing strictly on hosting, maintaining, and optimizing **a single server i
 
 ---
 
-### 📊 Real RAM Consumption Benchmark
-
-| Control Panel | Idle RAM Usage | Startup Time | Multi-server Model |
-| :--- | :---: | :---: | :--- |
-| **Palworld Server Manager** | **~50–75 MB** (~0% CPU) | **~1 second** | **Single dedicated instance (ultra-lightweight & focused)** |
-| Pterodactyl Panel + Wings | ~800 MB to 1.2 GB | Multiple services | Distributed infrastructure (PHP, Nginx, DB, Redis, Wings) |
-| Windows VM / Wine Emulation | ~2.0 GB to 3.5 GB | ~60 to 90 seconds | Heavy emulation overhead with guest OS bloat |
-
----
-
 ### ✨ Key Features
 
 * 🕹️ **1-Click SteamCMD Installer & Integrity Checker**:
@@ -291,7 +271,7 @@ By focusing strictly on hosting, maintaining, and optimizing **a single server i
 
 ### ⚡ Performance & Server FPS (Tickrate)
 
-The Palworld dedicated server runs its physics, Pal artificial intelligence, and combat calculations at a target of **60 FPS / Ticks per second**. Monitoring server FPS in real time allows server admins to detect performance bottlenecks before players feel lag.
+The Palworld dedicated server runs its physics, Pal artificial intelligence, and combat calculations at a target of **60 FPS / Ticks per second**. The web panel queries and graphs this metric in real time directly from the official Palworld REST API endpoint (`GET /v1/api/metrics`), where Unreal Engine 5 reports the exact `serverfps` and `serverframetime` values. Monitoring server FPS in real time allows server admins to detect performance bottlenecks before players feel lag.
 
 | Server FPS | Status | Gameplay Experience |
 | :---: | :---: | :--- |
