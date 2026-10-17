@@ -1,0 +1,29 @@
+---
+name: palworld-server
+services:
+  palworld-server:
+    image: palworld-server-docker:latest
+    build: .
+    platform: linux/amd64
+    restart: unless-stopped
+    container_name: palworld-server
+    stop_grace_period: 30s
+    # Límite de memoria RAM recomendado para servidores dedicados de Palworld (8g a 16g).
+    mem_limit: 8g
+    ports:
+      - "8080:8080"      # Panel Web Palworld Server Manager (HTTP)
+      - "8211:8211/udp"  # Puerto de Juego Principal Palworld (UDP)
+      - "27015:27015/udp" # Puerto de Consulta Steam Query (UDP)
+      - "25575:25575/tcp" # Puerto RCON Consola Remota (TCP)
+      - "8212:8212/tcp"  # Puerto REST API Oficial de Palworld (TCP)
+    environment:
+      # --- Zona Horaria del Contenedor ---
+      - TZ=America/Guayaquil
+
+      # --- Acceso Inicial al Panel Web ---
+      - PANEL_USER=admin
+      - PANEL_PASSWORD=adminpassword
+    volumes:
+      - ./steamcmd/palworld:/home/steam/steamcmd/palworld
+      - ./palworld-backups:/home/steam/palworld-backups
+      - ./data:/app/data

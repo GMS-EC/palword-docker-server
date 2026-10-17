@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+data/
+backups/
+steamcmd/
+palworld-backups/
+.env
+.venv
+env/
+venv/
+*.log

@@ -1,0 +1,134 @@
+name: Release & Docker Build
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths-ignore:
+      - 'README.md'
+      - '.gitignore'
+      - '.dockerignore'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  release:
+    name: Auto Release & Tag
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
+      tag_name: ${{ steps.get_version.outputs.tag_name }}
+      tag_created: ${{ steps.check_tag.outputs.tag_created }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Extract version and release notes from CHANGELOG.md
+        id: get_version
+        run: |
+          python3 -c "
+          import os, re
+          with open('CHANGELOG.md', 'r', encoding='utf-8') as f:
+              content = f.read()
+          
+          # Match ## [1.0.0] or ## [v1.0.0]
+          m = re.search(r'^##\s*\[v?([0-9]+\.[0-9]+\.[0-9]+[^\]]*)\]', content, re.MULTILINE)
+          ver = m.group(1).strip() if m else '1.0.0'
+          tag = f'v{ver}'
+          
+          # Extract body of the top-most release
+          pattern = rf'^##\s*\[v?{re.escape(ver)}\][^\n]*\n(.*?)(?=\n##\s*\[|\Z)'
+          notes_match = re.search(pattern, content, re.MULTILINE | re.DOTALL)
+          notes = notes_match.group(1).strip() if notes_match else f'Release {tag}'
+          
+          with open('RELEASE_NOTES.md', 'w', encoding='utf-8') as rf:
+              rf.write(notes)
+          
+          with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as gh:
+              gh.write(f'version={ver}\n')
+              gh.write(f'tag_name={tag}\n')
+          "
+
+      - name: Check if Git tag already exists
+        id: check_tag
+        run: |
+          TAG="${{ steps.get_version.outputs.tag_name }}"
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists locally or remotely. Skipping release creation."
+            echo "tag_created=false" >> $GITHUB_OUTPUT
+          elif git ls-remote --tags origin "refs/tags/$TAG" | grep -q "$TAG"; then
+            echo "Tag $TAG exists on remote. Skipping release creation."
+            echo "tag_created=false" >> $GITHUB_OUTPUT
+          else
+            echo "Tag $TAG is new."
+            echo "tag_created=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Git tag and GitHub Release
+        if: steps.check_tag.outputs.tag_created == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ steps.get_version.outputs.tag_name }}"
+          VER="${{ steps.get_version.outputs.version }}"
+          
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG" -m "Palworld Server Manager $TAG"
+          git push origin "$TAG"
+          
+          gh release create "$TAG" \
+            --title "Palworld Server Manager $TAG" \
+            --notes-file RELEASE_NOTES.md
+
+  docker:
+    name: Build & Push Docker Image
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extract Docker metadata and tags
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/palword-docker-server
+          tags: |
+            type=raw,value=latest
+            type=raw,value=${{ needs.release.outputs.version }}
+            type=raw,value=${{ needs.release.outputs.tag_name }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

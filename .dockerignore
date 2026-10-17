@@ -1,0 +1,15 @@
+.git
+.gitignore
+.dockerignore
+ark-server-docker
+palworld-server-docker-main
+data/
+backups/
+steamcmd/
+palworld-backups/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.md
+.env

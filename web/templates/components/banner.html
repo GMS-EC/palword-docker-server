@@ -1,0 +1,89 @@
+<!-- Top Server Overview & Metrics Banner -->
+<div class="server-overview-banner" id="server-overview-banner">
+  <!-- Mobile Summary & Toggle Header (Only on screens <= 768px) -->
+  <div class="banner-mobile-bar" id="banner-mobile-bar" role="button" tabindex="0" aria-expanded="false" aria-controls="overview-grid" onclick="if(window.App&&App.toggleBannerDetails)App.toggleBannerDetails();else if(window.toggleBannerDetails)toggleBannerDetails();">
+    <div class="banner-mobile-left">
+      <span class="status-dot {{ 'offline' if not is_installed or server_status == 'OFFLINE' else server_status|lower }}" id="banner-mob-dot" style="width: 8px; height: 8px; border-radius: 50%; display: inline-block;"></span>
+      <span class="banner-mob-title" id="banner-mob-title" style="font-weight: 600; font-size: 0.82rem;" data-i18n="banner_server_details">Detalles del Servidor</span>
+      <span class="banner-mob-pill" id="banner-mob-tps" style="color: #3fb950; font-size: 0.75rem; font-weight: 700; background: rgba(63, 185, 80, 0.1); border: 1px solid rgba(63, 185, 80, 0.3); border-radius: 4px; padding: 1px 6px;">-- FPS</span>
+    </div>
+    <div class="banner-mobile-right" id="banner-mobile-toggle-btn">
+      <span class="banner-toggle-hint" id="banner-toggle-hint" style="font-size: 0.74rem; color: var(--text-dim);" data-i18n="banner_expand">Expandir</span>
+      <svg id="banner-chevron-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition: transform 0.25s ease; color: var(--text-muted);"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+  </div>
+
+  <div class="overview-grid" id="overview-grid">
+    <!-- Columna 1: Estado, Inicio, Uptime y Zona Horaria -->
+    <div class="overview-col">
+      <div class="overview-item">
+        <span class="overview-label" data-i18n="banner_status_label">Estado del Servidor:</span>
+        <span class="overview-val status-text-inline {{ 'offline' if not is_installed or server_status == 'OFFLINE' else server_status|lower }}" id="top-server-status">
+          {%- if not is_installed -%}
+            Sin instalar
+          {%- elif server_status == 'RUNNING' -%}
+            En línea
+          {%- elif server_status == 'STARTING' -%}
+            Iniciando...
+          {%- elif server_status == 'STOPPING' -%}
+            Deteniendo...
+          {%- else -%}
+            Apagado
+          {%- endif -%}
+        </span>
+      </div>
+      <div class="overview-item">
+        <span class="overview-label" data-i18n="banner_started_label">Servidor Iniciado:</span>
+        <span class="overview-val" id="top-server-started">{{ stats.started_at_str or '--' if is_installed else '--' }}</span>
+      </div>
+      <div class="overview-item">
+        <span class="overview-label" data-i18n="banner_uptime_label">Actividad del Servidor:</span>
+        <span class="overview-val uptime-live" id="top-server-uptime">{{ stats.uptime_formatted or '--' if is_installed else '--' }}</span>
+      </div>
+      <div class="overview-item">
+        <span class="overview-label" data-i18n="banner_tz_label">Zona horaria del servidor:</span>
+        <span class="overview-val highlight-tz" id="top-server-timezone">{{ stats.timezone or 'America/Guayaquil' }}</span>
+      </div>
+    </div>
+
+    <!-- Columna 2: CPU, Memoria, Jugadores y Rendimiento (TPS) -->
+    <div class="overview-col">
+      <div class="overview-item">
+        <span class="overview-label" data-i18n="banner_cpu_label">Uso de CPU:</span>
+        <span class="overview-val" id="top-server-cpu">{{ stats.cpu_percent or 0 }} %</span>
+      </div>
+      <div class="overview-item">
+        <span class="overview-label" data-i18n="banner_mem_label">RAM Palworld:</span>
+        <span class="overview-val" id="top-server-memory">{{ stats.memory_mb or 0 }} MB</span>
+      </div>
+      <div class="overview-item">
+        <span class="overview-label" data-i18n="banner_players_label">Domadores Online:</span>
+        <span class="overview-val highlight-players" id="top-server-players">{{ (stats.online_players ~ ' / ' ~ stats.max_players) if is_installed and stats.max_players is defined else '0 / 32' }}</span>
+      </div>
+      <div class="overview-item">
+        <span class="overview-label" data-i18n="banner_tps_label">Tickrate (FPS):</span>
+        <span class="overview-val" id="top-server-tps" style="font-weight: 700; color: #3fb950;">-- FPS</span>
+      </div>
+    </div>
+
+    <!-- Columna 3: Nombre, Versión, Descripción y Tipo -->
+    <div class="overview-col">
+      <div class="overview-item">
+        <span class="overview-label" data-i18n="banner_name_label">Nombre del Servidor:</span>
+        <span class="overview-val highlight-name" id="top-server-name" style="color: #58a6ff; font-weight: 700;">{{ server_name if is_installed else '--' }}</span>
+      </div>
+      <div class="overview-item">
+        <span class="overview-label" data-i18n="banner_version_label">Puerto de Juego:</span>
+        <span class="overview-val highlight-version" id="top-server-version">{{ stats.server_port or 8211 }} UDP</span>
+      </div>
+      <div class="overview-item">
+        <span class="overview-label" data-i18n="banner_desc_label">Descripción:</span>
+        <span class="overview-val motd-val" id="top-server-motd">{{ motd if is_installed else 'Palworld Dedicated Server' }}</span>
+      </div>
+      <div class="overview-item">
+        <span class="overview-label" data-i18n="banner_type_label">Plataforma:</span>
+        <span class="overview-val highlight-type" id="top-server-type">Palworld Dedicated Server (SteamCMD)</span>
+      </div>
+    </div>
+  </div>
+</div>

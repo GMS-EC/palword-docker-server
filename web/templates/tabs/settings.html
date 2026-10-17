@@ -1,0 +1,516 @@
+<!-- TAB: CONFIGURACIÓN DE PALWORLD (PalWorldSettings.ini) -->
+<section class="tab-pane" id="tab-settings">
+  <!-- Dynamic Server Header Profile -->
+  <div class="settings-header-banner" id="settings-header-banner">
+    <div class="settings-server-info">
+      <div class="settings-server-icon" id="settings-badge-icon" style="display: flex; align-items: center; justify-content: center; background: rgba(56, 189, 248, 0.1); border-radius: 8px; width: 44px; height: 44px; border: 1px solid rgba(56, 189, 248, 0.3);">
+        <img src="/static/img/logo.png" alt="Palworld" width="28" height="28" style="object-fit: contain;">
+      </div>
+      <div>
+        <div class="settings-server-title" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <span id="settings-badge-title" style="font-weight: 700; font-size: 1.15rem; color: #f0f6fc;">Palworld Dedicated Server</span>
+          <span class="badge" id="settings-badge-version" style="background-color: var(--bg-subtle); color: #79c0ff; border: 1px solid rgba(56, 139, 253, 0.3);">Steam AppID 2394010</span>
+          <span class="badge" id="settings-badge-edition" style="background-color: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3);">Unreal Engine 5</span>
+        </div>
+        <div class="settings-server-sub" id="settings-badge-sub" style="font-size: 0.82rem; color: var(--text-dim); margin-top: 2px;">
+          Configuración avanzada de mundo, multiplicadores de experiencia, captura de Pals y parámetros del motor en <code>PalWorldSettings.ini</code>.
+        </div>
+      </div>
+    </div>
+    <div id="settings-badge-status">
+      <!-- Status pill populated dynamically -->
+    </div>
+  </div>
+
+  <!-- State: No Server Installed -->
+  <div class="card" id="settings-empty-state" style="display: none; text-align: center; padding: 40px 20px;">
+    <div style="margin-bottom: 12px; display: flex; justify-content: center;">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#d29922" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    </div>
+    <h3 style="margin-bottom: 8px;">No se ha detectado el servidor de Palworld instalado</h3>
+    <p style="color: var(--text-muted); max-width: 540px; margin: 0 auto 20px auto; font-size: 0.9rem;">
+      Para personalizar las opciones de juego, multiplicadores y combate, primero debes instalar los archivos del servidor desde la pestaña "Versiones & Software".
+    </p>
+    <button class="btn btn-primary" onclick="App.switchTab('installer')" style="display: inline-flex; align-items: center; gap: 6px;">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+      <span>Ir a Versiones & Software</span>
+    </button>
+  </div>
+
+  <!-- Main Settings Container -->
+  <div id="settings-container">
+    <!-- Mode & Search Action Bar -->
+    <div class="settings-toolbar" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; background: rgba(18, 22, 36, 0.7); padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border-color);">
+      <!-- Mode Toggle Buttons -->
+      <div class="btn-group" style="display: flex; gap: 4px;">
+        <button type="button" class="btn btn-sm btn-primary" id="btn-mode-props-visual" onclick="Settings.setPropertiesMode('visual')" style="display: inline-flex; align-items: center; gap: 6px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          <span>Modo Visual</span>
+        </button>
+        <button type="button" class="btn btn-sm btn-outline" id="btn-mode-props-raw" onclick="Settings.setPropertiesMode('raw')" style="display: inline-flex; align-items: center; gap: 6px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          <span>Modo Avanzado (PalWorldSettings.ini)</span>
+        </button>
+      </div>
+
+      <!-- Search Input -->
+      <div style="position: relative; min-width: 220px; flex: 1; max-width: 380px;">
+        <input type="text" id="props-search-input" class="form-input" placeholder="Buscar parámetro (ej: ExpRate, Password, Port)..." oninput="Settings.filterProperties(this.value)" style="padding-left: 32px; font-size: 0.83rem;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-dim); pointer-events: none;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </div>
+
+      <!-- Action Buttons -->
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span id="settings-unsaved-badge" class="badge" style="display: none; background: rgba(227, 179, 65, 0.15); border: 1px solid #e3b341; color: #f2cc60; font-size: 0.75rem;">
+          Cambios sin guardar
+        </span>
+        <button class="btn btn-outline" id="btn-reset-settings" onclick="Settings.resetToDefaults()" title="Restablecer valores por defecto del servidor" style="font-size: 0.82rem; padding: 6px 12px;">
+          Restablecer
+        </button>
+        <button class="btn btn-primary" id="btn-save-settings" onclick="Settings.saveProperties()" style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.82rem; padding: 6px 16px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          <span id="settings-save-btn-text">Guardar Configuración</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Category Filter Pills (Only visible in Visual Mode) -->
+    <div id="settings-categories-bar" style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 20px;">
+      <button type="button" class="chip-btn prop-cat-btn active" data-cat="all" onclick="Settings.setPropertiesCategory('all')">Todas</button>
+      <button type="button" class="chip-btn prop-cat-btn" data-cat="server" onclick="Settings.setPropertiesCategory('server')">Identidad &amp; Red</button>
+      <button type="button" class="chip-btn prop-cat-btn" data-cat="gameplay" onclick="Settings.setPropertiesCategory('gameplay')">Dificultad &amp; Tasas</button>
+      <button type="button" class="chip-btn prop-cat-btn" data-cat="combat" onclick="Settings.setPropertiesCategory('combat')">Combate &amp; Daño</button>
+      <button type="button" class="chip-btn prop-cat-btn" data-cat="players" onclick="Settings.setPropertiesCategory('players')">Jugadores</button>
+      <button type="button" class="chip-btn prop-cat-btn" data-cat="pals" onclick="Settings.setPropertiesCategory('pals')">Pals &amp; Eclosión</button>
+      <button type="button" class="chip-btn prop-cat-btn" data-cat="bases" onclick="Settings.setPropertiesCategory('bases')">Bases &amp; Construcción</button>
+      <button type="button" class="chip-btn prop-cat-btn" data-cat="resources" onclick="Settings.setPropertiesCategory('resources')">Recursos &amp; Drops</button>
+    </div>
+
+    <!-- VISUAL MODE: Grouped Setting Cards -->
+    <div id="settings-visual-view" class="grid-2">
+
+      <!-- CATEGORY: Identidad & Red -->
+      <div class="card setting-category-card" data-category="server">
+        <div class="card-title" style="display: flex; align-items: center; gap: 8px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#58a6ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          <span>Identidad del Servidor y Puertos de Red</span>
+        </div>
+
+        <div class="form-group setting-prop-item" data-key="ServerName">
+          <label class="form-label">Nombre del Servidor (ServerName)</label>
+          <input type="text" class="form-input prop-input" id="prop-ServerName" data-key="ServerName" placeholder="Palworld Dedicated Server" oninput="Settings.markDirty()">
+          <div class="field-hint">Nombre que se mostrará en la lista de servidores y en la interfaz.</div>
+        </div>
+
+        <div class="form-group setting-prop-item" data-key="ServerDescription">
+          <label class="form-label">Descripción del Servidor (ServerDescription)</label>
+          <textarea class="form-input prop-input" id="prop-ServerDescription" data-key="ServerDescription" rows="2" placeholder="Palworld Server hosted with Docker" oninput="Settings.markDirty()"></textarea>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group setting-prop-item" data-key="ServerPassword">
+            <label class="form-label">Contraseña de Acceso (ServerPassword)</label>
+            <input type="text" class="form-input prop-input" id="prop-ServerPassword" data-key="ServerPassword" placeholder="Dejar vacío para público" oninput="Settings.markDirty()">
+            <div class="field-hint">Requerida para que los jugadores se unan.</div>
+          </div>
+          <div class="form-group setting-prop-item" data-key="AdminPassword">
+            <label class="form-label">Contraseña de Administrador (AdminPassword)</label>
+            <input type="text" class="form-input prop-input" id="prop-AdminPassword" data-key="AdminPassword" placeholder="adminpassword" oninput="Settings.markDirty()">
+            <div class="field-hint">Para iniciar sesión como admin in-game y RCON.</div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group setting-prop-item" data-key="ServerPlayerMaxNum">
+            <label class="form-label">Jugadores Máximos (ServerPlayerMaxNum)</label>
+            <input type="number" class="form-input prop-input" id="prop-ServerPlayerMaxNum" data-key="ServerPlayerMaxNum" min="1" max="64" value="32" oninput="Settings.markDirty()">
+          </div>
+          <div class="form-group setting-prop-item" data-key="PublicPort">
+            <label class="form-label">Puerto Público del Juego (PublicPort)</label>
+            <input type="number" class="form-input prop-input" id="prop-PublicPort" data-key="PublicPort" value="8211" oninput="Settings.markDirty()">
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group setting-prop-item" data-key="RCONPort">
+            <label class="form-label">Puerto RCON (RCONPort)</label>
+            <input type="number" class="form-input prop-input" id="prop-RCONPort" data-key="RCONPort" value="25575" oninput="Settings.markDirty()">
+          </div>
+          <div class="form-group setting-prop-item" data-key="RESTAPIPort">
+            <label class="form-label">Puerto REST API (RESTAPIPort)</label>
+            <input type="number" class="form-input prop-input" id="prop-RESTAPIPort" data-key="RESTAPIPort" value="8212" oninput="Settings.markDirty()">
+          </div>
+        </div>
+
+        <div class="form-group setting-prop-item" data-key="CrossplayPlatforms">
+          <label class="form-label">Plataformas de Juego Cruzado (CrossplayPlatforms)</label>
+          <input type="text" class="form-input prop-input" id="prop-CrossplayPlatforms" data-key="CrossplayPlatforms" value="(Steam,Xbox,PS5,Mac)" oninput="Settings.markDirty()">
+          <div class="field-hint">Plataformas admitidas. Formato: (Steam,Xbox,PS5,Mac)</div>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group setting-prop-item" data-key="RCONEnabled">
+            <label class="toggle-switch-label" style="display:flex; justify-content:space-between; align-items:center;">
+              <span>Habilitar RCON (RCONEnabled)</span>
+              <label class="toggle-switch">
+                <input type="checkbox" id="prop-RCONEnabled" data-key="RCONEnabled" onchange="Settings.markDirty()">
+                <span class="slider"></span>
+              </label>
+            </label>
+          </div>
+          <div class="form-group setting-prop-item" data-key="RESTAPIEnabled">
+            <label class="toggle-switch-label" style="display:flex; justify-content:space-between; align-items:center;">
+              <span>Habilitar REST API (RESTAPIEnabled)</span>
+              <label class="toggle-switch">
+                <input type="checkbox" id="prop-RESTAPIEnabled" data-key="RESTAPIEnabled" onchange="Settings.markDirty()">
+                <span class="slider"></span>
+              </label>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- CATEGORY: Dificultad & Tasas -->
+      <div class="card setting-category-card" data-category="gameplay">
+        <div class="card-title" style="display: flex; align-items: center; gap: 8px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#eab308" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          <span>Dificultad y Tasas del Mundo</span>
+        </div>
+
+        <div class="form-group setting-prop-item" data-key="Difficulty">
+          <label class="form-label">Dificultad (Difficulty)</label>
+          <select class="form-select prop-input" id="prop-Difficulty" data-key="Difficulty" onchange="Settings.markDirty()">
+            <option value="None">Personalizada / None</option>
+            <option value="Casual">Casual (Fácil)</option>
+            <option value="Normal">Normal</option>
+            <option value="Hard">Hard (Difícil)</option>
+          </select>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group setting-prop-item" data-key="ExpRate">
+            <label class="form-label">Multiplicador de EXP (ExpRate)</label>
+            <input type="number" step="0.1" min="0.1" max="20.0" class="form-input prop-input" id="prop-ExpRate" data-key="ExpRate" value="1.0" oninput="Settings.markDirty()">
+            <div class="field-hint">1.0 = Default (Valores mayores aceleran la subida de nivel).</div>
+          </div>
+          <div class="form-group setting-prop-item" data-key="PalCaptureRate">
+            <label class="form-label">Tasa de Captura de Pals (PalCaptureRate)</label>
+            <input type="number" step="0.1" min="0.1" max="10.0" class="form-input prop-input" id="prop-PalCaptureRate" data-key="PalCaptureRate" value="1.0" oninput="Settings.markDirty()">
+            <div class="field-hint">Multiplicador de éxito de las Pal Spheres.</div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group setting-prop-item" data-key="DayTimeSpeedRate">
+            <label class="form-label">Velocidad del Día (DayTimeSpeedRate)</label>
+            <input type="number" step="0.1" min="0.1" max="5.0" class="form-input prop-input" id="prop-DayTimeSpeedRate" data-key="DayTimeSpeedRate" value="1.0" oninput="Settings.markDirty()">
+          </div>
+          <div class="form-group setting-prop-item" data-key="NightTimeSpeedRate">
+            <label class="form-label">Velocidad de la Noche (NightTimeSpeedRate)</label>
+            <input type="number" step="0.1" min="0.1" max="5.0" class="form-input prop-input" id="prop-NightTimeSpeedRate" data-key="NightTimeSpeedRate" value="1.0" oninput="Settings.markDirty()">
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group setting-prop-item" data-key="PalSpawnNumRate">
+            <label class="form-label">Tasa de Aparición de Pals (PalSpawnNumRate)</label>
+            <input type="number" step="0.1" min="0.5" max="3.0" class="form-input prop-input" id="prop-PalSpawnNumRate" data-key="PalSpawnNumRate" value="1.0" oninput="Settings.markDirty()">
+            <div class="field-hint">Densidad de Pals salvajes en el mapa.</div>
+          </div>
+          <div class="form-group setting-prop-item" data-key="WorkSpeedRate">
+            <label class="form-label">Velocidad de Trabajo (WorkSpeedRate)</label>
+            <input type="number" step="0.1" min="0.1" max="10.0" class="form-input prop-input" id="prop-WorkSpeedRate" data-key="WorkSpeedRate" value="1.0" oninput="Settings.markDirty()">
+          </div>
+        </div>
+
+        <div class="form-group setting-prop-item" data-key="AutoSaveSpan">
+          <label class="form-label">Intervalo de Guardado Automático en Segundos (AutoSaveSpan)</label>
+          <input type="number" step="5" min="10" max="600" class="form-input prop-input" id="prop-AutoSaveSpan" data-key="AutoSaveSpan" value="30.0" oninput="Settings.markDirty()">
+          <div class="field-hint">Frecuencia con que el motor de Palworld escribe el estado al disco.</div>
+        </div>
+      </div>
+
+      <!-- CATEGORY: Combate & Daño -->
+      <div class="card setting-category-card" data-category="combat">
+        <div class="card-title" style="display: flex; align-items: center; gap: 8px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f85149" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 17.5L3 6V3h3l11.5 11.5"/><path d="M13 19l6-6"/><path d="M16 16l4 4"/><path d="M19 21l2-2"/></svg>
+          <span>Combate, Daño y Muerte</span>
+        </div>
+
+        <div class="form-group setting-prop-item" data-key="DeathPenalty">
+          <label class="form-label">Penalización por Muerte (DeathPenalty)</label>
+          <select class="form-select prop-input" id="prop-DeathPenalty" data-key="DeathPenalty" onchange="Settings.markDirty()">
+            <option value="None">None (No perder nada al morir)</option>
+            <option value="Item">Item (Perder solo objetos del inventario)</option>
+            <option value="ItemAndEquipment">ItemAndEquipment (Perder objetos y equipamiento)</option>
+            <option value="All">All (Perder todos los objetos, equipo y Pals llevados)</option>
+          </select>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group setting-prop-item" data-key="PlayerDamageRateAttack">
+            <label class="form-label">Daño de Jugador infligido (PlayerDamageRateAttack)</label>
+            <input type="number" step="0.1" min="0.1" max="10.0" class="form-input prop-input" id="prop-PlayerDamageRateAttack" data-key="PlayerDamageRateAttack" value="1.0" oninput="Settings.markDirty()">
+          </div>
+          <div class="form-group setting-prop-item" data-key="PlayerDamageRateDefense">
+            <label class="form-label">Daño de Jugador recibido (PlayerDamageRateDefense)</label>
+            <input type="number" step="0.1" min="0.1" max="10.0" class="form-input prop-input" id="prop-PlayerDamageRateDefense" data-key="PlayerDamageRateDefense" value="1.0" oninput="Settings.markDirty()">
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group setting-prop-item" data-key="PalDamageRateAttack">
+            <label class="form-label">Daño de Pal infligido (PalDamageRateAttack)</label>
+            <input type="number" step="0.1" min="0.1" max="10.0" class="form-input prop-input" id="prop-PalDamageRateAttack" data-key="PalDamageRateAttack" value="1.0" oninput="Settings.markDirty()">
+          </div>
+          <div class="form-group setting-prop-item" data-key="PalDamageRateDefense">
+            <label class="form-label">Daño de Pal recibido (PalDamageRateDefense)</label>
+            <input type="number" step="0.1" min="0.1" max="10.0" class="form-input prop-input" id="prop-PalDamageRateDefense" data-key="PalDamageRateDefense" value="1.0" oninput="Settings.markDirty()">
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group setting-prop-item" data-key="bIsPvP">
+            <label class="toggle-switch-label" style="display:flex; justify-content:space-between; align-items:center;">
+              <span>Modo PvP (bIsPvP)</span>
+              <label class="toggle-switch">
+                <input type="checkbox" id="prop-bIsPvP" data-key="bIsPvP" onchange="Settings.markDirty()">
+                <span class="slider"></span>
+              </label>
+            </label>
+          </div>
+          <div class="form-group setting-prop-item" data-key="bEnablePlayerToPlayerDamage">
+            <label class="toggle-switch-label" style="display:flex; justify-content:space-between; align-items:center;">
+              <span>Daño entre Jugadores</span>
+              <label class="toggle-switch">
+                <input type="checkbox" id="prop-bEnablePlayerToPlayerDamage" data-key="bEnablePlayerToPlayerDamage" onchange="Settings.markDirty()">
+                <span class="slider"></span>
+              </label>
+            </label>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group setting-prop-item" data-key="bEnableFriendlyFire">
+            <label class="toggle-switch-label" style="display:flex; justify-content:space-between; align-items:center;">
+              <span>Fuego Amigo (bEnableFriendlyFire)</span>
+              <label class="toggle-switch">
+                <input type="checkbox" id="prop-bEnableFriendlyFire" data-key="bEnableFriendlyFire" onchange="Settings.markDirty()">
+                <span class="slider"></span>
+              </label>
+            </label>
+          </div>
+          <div class="form-group setting-prop-item" data-key="bEnableInvaderEnemy">
+            <label class="toggle-switch-label" style="display:flex; justify-content:space-between; align-items:center;">
+              <span>Incursiones a la Base (Raids)</span>
+              <label class="toggle-switch">
+                <input type="checkbox" id="prop-bEnableInvaderEnemy" data-key="bEnableInvaderEnemy" onchange="Settings.markDirty()">
+                <span class="slider"></span>
+              </label>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- CATEGORY: Jugadores -->
+      <div class="card setting-category-card" data-category="players">
+        <div class="card-title" style="display: flex; align-items: center; gap: 8px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+          <span>Estadísticas de Jugadores</span>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group setting-prop-item" data-key="PlayerStaminaDecreaceRate">
+            <label class="form-label">Consumo de Energía (Stamina Rate)</label>
+            <input type="number" step="0.1" min="0.1" max="5.0" class="form-input prop-input" id="prop-PlayerStaminaDecreaceRate" data-key="PlayerStaminaDecreaceRate" value="1.0" oninput="Settings.markDirty()">
+          </div>
+          <div class="form-group setting-prop-item" data-key="PlayerStomachDecreaceRate">
+            <label class="form-label">Consumo de Hambre (Stomach Rate)</label>
+            <input type="number" step="0.1" min="0.1" max="5.0" class="form-input prop-input" id="prop-PlayerStomachDecreaceRate" data-key="PlayerStomachDecreaceRate" value="1.0" oninput="Settings.markDirty()">
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group setting-prop-item" data-key="PlayerAutoHPRegeneRate">
+            <label class="form-label">Regeneración de Salud (HP Regene)</label>
+            <input type="number" step="0.1" min="0.1" max="5.0" class="form-input prop-input" id="prop-PlayerAutoHPRegeneRate" data-key="PlayerAutoHPRegeneRate" value="1.0" oninput="Settings.markDirty()">
+          </div>
+          <div class="form-group setting-prop-item" data-key="ItemWeightRate">
+            <label class="form-label">Tasa de Peso de Objetos (ItemWeightRate)</label>
+            <input type="number" step="0.1" min="0.1" max="10.0" class="form-input prop-input" id="prop-ItemWeightRate" data-key="ItemWeightRate" value="1.0" oninput="Settings.markDirty()">
+            <div class="field-hint">Valores menores a 1.0 reducen la sobrecarga de peso.</div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group setting-prop-item" data-key="bEnableFastTravel">
+            <label class="toggle-switch-label" style="display:flex; justify-content:space-between; align-items:center;">
+              <span>Viaje Rápido (bEnableFastTravel)</span>
+              <label class="toggle-switch">
+                <input type="checkbox" id="prop-bEnableFastTravel" data-key="bEnableFastTravel" onchange="Settings.markDirty()">
+                <span class="slider"></span>
+              </label>
+            </label>
+          </div>
+          <div class="form-group setting-prop-item" data-key="bEnableNonLoginPenalty">
+            <label class="toggle-switch-label" style="display:flex; justify-content:space-between; align-items:center;">
+              <span>Penalización por Inactividad</span>
+              <label class="toggle-switch">
+                <input type="checkbox" id="prop-bEnableNonLoginPenalty" data-key="bEnableNonLoginPenalty" onchange="Settings.markDirty()">
+                <span class="slider"></span>
+              </label>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- CATEGORY: Pals & Eclosión -->
+      <div class="card setting-category-card" data-category="pals">
+        <div class="card-title" style="display: flex; align-items: center; gap: 8px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a371f7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/></svg>
+          <span>Pals y Tiempo de Incubación de Huevos</span>
+        </div>
+
+        <div class="form-group setting-prop-item" data-key="PalEggDefaultHatchingTime">
+          <label class="form-label">Tiempo de Incubación de Huevos en Horas (PalEggDefaultHatchingTime)</label>
+          <input type="number" step="0.5" min="0.0" max="72.0" class="form-input prop-input" id="prop-PalEggDefaultHatchingTime" data-key="PalEggDefaultHatchingTime" value="1.0" oninput="Settings.markDirty()">
+          <div class="field-hint">0 = Eclosión instantánea. 1.0 = 1 hora para huevos grandes.</div>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group setting-prop-item" data-key="PalStomachDecreaceRate">
+            <label class="form-label">Consumo de Hambre de Pals</label>
+            <input type="number" step="0.1" min="0.1" max="5.0" class="form-input prop-input" id="prop-PalStomachDecreaceRate" data-key="PalStomachDecreaceRate" value="1.0" oninput="Settings.markDirty()">
+          </div>
+          <div class="form-group setting-prop-item" data-key="PalStaminaDecreaceRate">
+            <label class="form-label">Consumo de Energía de Pals</label>
+            <input type="number" step="0.1" min="0.1" max="5.0" class="form-input prop-input" id="prop-PalStaminaDecreaceRate" data-key="PalStaminaDecreaceRate" value="1.0" oninput="Settings.markDirty()">
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group setting-prop-item" data-key="bPalLost">
+            <label class="toggle-switch-label" style="display:flex; justify-content:space-between; align-items:center;">
+              <span>Pérdida permanente de Pal al morir (Hardcore)</span>
+              <label class="toggle-switch">
+                <input type="checkbox" id="prop-bPalLost" data-key="bPalLost" onchange="Settings.markDirty()">
+                <span class="slider"></span>
+              </label>
+            </label>
+          </div>
+          <div class="form-group setting-prop-item" data-key="bAllowGlobalPalboxExport">
+            <label class="toggle-switch-label" style="display:flex; justify-content:space-between; align-items:center;">
+              <span>Exportar Palbox Global</span>
+              <label class="toggle-switch">
+                <input type="checkbox" id="prop-bAllowGlobalPalboxExport" data-key="bAllowGlobalPalboxExport" onchange="Settings.markDirty()">
+                <span class="slider"></span>
+              </label>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- CATEGORY: Bases & Construcción -->
+      <div class="card setting-category-card" data-category="bases">
+        <div class="card-title" style="display: flex; align-items: center; gap: 8px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2ea043" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          <span>Bases, Gremios y Límite de Construcción</span>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group setting-prop-item" data-key="BaseCampWorkerMaxNum">
+            <label class="form-label">Pals Trabajadores por Base (BaseCampWorkerMaxNum)</label>
+            <input type="number" min="1" max="50" class="form-input prop-input" id="prop-BaseCampWorkerMaxNum" data-key="BaseCampWorkerMaxNum" value="15" oninput="Settings.markDirty()">
+            <div class="field-hint">Límite oficial máximo de Pals asignados a cada base.</div>
+          </div>
+          <div class="form-group setting-prop-item" data-key="BaseCampMaxNumInGuild">
+            <label class="form-label">Bases Máximas por Gremio (BaseCampMaxNumInGuild)</label>
+            <input type="number" min="1" max="10" class="form-input prop-input" id="prop-BaseCampMaxNumInGuild" data-key="BaseCampMaxNumInGuild" value="4" oninput="Settings.markDirty()">
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group setting-prop-item" data-key="GuildPlayerMaxNum">
+            <label class="form-label">Jugadores Máximos por Gremio (GuildPlayerMaxNum)</label>
+            <input type="number" min="1" max="64" class="form-input prop-input" id="prop-GuildPlayerMaxNum" data-key="GuildPlayerMaxNum" value="20" oninput="Settings.markDirty()">
+          </div>
+          <div class="form-group setting-prop-item" data-key="SupplyDropSpan">
+            <label class="form-label">Intervalo de Suministros Aéreos en Minutos (SupplyDropSpan)</label>
+            <input type="number" min="10" max="600" class="form-input prop-input" id="prop-SupplyDropSpan" data-key="SupplyDropSpan" value="180" oninput="Settings.markDirty()">
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group setting-prop-item" data-key="BuildObjectDeteriorationDamageRate">
+            <label class="form-label">Deterioro de Estructuras fuera de Base</label>
+            <input type="number" step="0.1" min="0.0" max="10.0" class="form-input prop-input" id="prop-BuildObjectDeteriorationDamageRate" data-key="BuildObjectDeteriorationDamageRate" value="1.0" oninput="Settings.markDirty()">
+            <div class="field-hint">0.0 = Las estructuras no se deterioran nunca.</div>
+          </div>
+          <div class="form-group setting-prop-item" data-key="DropItemMaxNum">
+            <label class="form-label">Límite de Ítems en el Suelo (DropItemMaxNum)</label>
+            <input type="number" min="100" max="10000" class="form-input prop-input" id="prop-DropItemMaxNum" data-key="DropItemMaxNum" value="3000" oninput="Settings.markDirty()">
+          </div>
+        </div>
+      </div>
+
+      <!-- CATEGORY: Recursos & Drops -->
+      <div class="card setting-category-card" data-category="resources">
+        <div class="card-title" style="display: flex; align-items: center; gap: 8px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#388bfd" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+          <span>Recursos, Recolección y Durabilidad</span>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group setting-prop-item" data-key="CollectionDropRate">
+            <label class="form-label">Multiplicador de Recolección (CollectionDropRate)</label>
+            <input type="number" step="0.1" min="0.5" max="5.0" class="form-input prop-input" id="prop-CollectionDropRate" data-key="CollectionDropRate" value="1.0" oninput="Settings.markDirty()">
+            <div class="field-hint">Cantidad de madera, piedra y minerales obtenidos por golpe.</div>
+          </div>
+          <div class="form-group setting-prop-item" data-key="CollectionObjectRespawnSpeedRate">
+            <label class="form-label">Velocidad de Reaparición de Recursos</label>
+            <input type="number" step="0.1" min="0.1" max="5.0" class="form-input prop-input" id="prop-CollectionObjectRespawnSpeedRate" data-key="CollectionObjectRespawnSpeedRate" value="1.0" oninput="Settings.markDirty()">
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group setting-prop-item" data-key="EnemyDropItemRate">
+            <label class="form-label">Tasa de Drop de Enemigos (EnemyDropItemRate)</label>
+            <input type="number" step="0.1" min="0.5" max="5.0" class="form-input prop-input" id="prop-EnemyDropItemRate" data-key="EnemyDropItemRate" value="1.0" oninput="Settings.markDirty()">
+          </div>
+          <div class="form-group setting-prop-item" data-key="EquipmentDurabilityDamageRate">
+            <label class="form-label">Desgaste de Equipamiento (Durability Damage)</label>
+            <input type="number" step="0.1" min="0.1" max="5.0" class="form-input prop-input" id="prop-EquipmentDurabilityDamageRate" data-key="EquipmentDurabilityDamageRate" value="1.0" oninput="Settings.markDirty()">
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RAW MODE: Code Editor for PalWorldSettings.ini -->
+    <div id="settings-raw-view" class="card" style="display: none; padding: 20px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px;">
+        <div>
+          <h3 style="margin: 0; font-size: 1.1rem; color: #f0f6fc; display: flex; align-items: center; gap: 8px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+            <span>Editor Directo: Pal/Saved/Config/LinuxServer/PalWorldSettings.ini</span>
+          </h3>
+          <p style="color: var(--text-dim); font-size: 0.8rem; margin: 4px 0 0 0;">
+            Edita directamente la sección <code>[/Script/Pal.PalGameWorldSettings] OptionSettings=(...)</code> respetando comillas y tipos del motor Unreal Engine.
+          </p>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button type="button" class="btn btn-outline" id="btn-reload-raw-props" onclick="Settings.loadRawProperties()" style="font-size: 0.82rem; padding: 6px 12px;">
+            Recargar de Disco
+          </button>
+          <button type="button" class="btn btn-primary" id="btn-save-raw-props" onclick="Settings.saveRawProperties()" style="font-size: 0.82rem; padding: 6px 16px;">
+            Guardar Archivo INI
+          </button>
+        </div>
+      </div>
+
+      <div class="raw-editor-wrap" style="border: 1px solid var(--border-color); border-radius: 6px; overflow: hidden; background: #0d1117;">
+        <textarea id="raw-props-editor" class="form-input" style="font-family: var(--font-mono); font-size: 0.86rem; line-height: 1.6; min-height: 480px; width: 100%; resize: vertical; background: transparent; border: none; color: #c9d1d9; padding: 14px;" spellcheck="false" placeholder="Cargando contenido de PalWorldSettings.ini..."></textarea>
+      </div>
+    </div>
+  </div>
+</section>
