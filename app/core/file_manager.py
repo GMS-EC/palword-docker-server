@@ -112,9 +112,13 @@ class FileManager:
                 items.append({
                     "name": "backups",
                     "type": "directory",
+                    "is_dir": True,
+                    "size": 0,
                     "size_formatted": "-",
                     "size_bytes": 0,
-                    "modified": "-",
+                    "modified": 0,
+                    "modified_timestamp": 0,
+                    "modified_str": "-",
                     "extension": "",
                     "is_special": True,
                     "path": "backups"
@@ -171,8 +175,8 @@ class FileManager:
             except Exception:
                 continue
 
-        # Ordenar: directorios primero, luego archivos alfabéticamente
-        items.sort(key=lambda x: (0 if x["is_dir"] else 1, x["name"].lower()))
+        # Ordenar: directorios primero, luego archivos alfabéticamente (usar .get para evitar KeyError)
+        items.sort(key=lambda x: (0 if (x.get("is_dir") or x.get("type") == "directory") else 1, x.get("name", "").lower()))
 
         return {
             "current_path": (relative_path or "").replace("\\", "/"),

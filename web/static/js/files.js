@@ -136,6 +136,12 @@ const Files = {
         } catch (_) {}
       }
     }
+    if (typeof path === 'string') {
+      const trimmed = path.trim().replace(/^\/+|\/+$/g, '');
+      if (trimmed === 'palworld' || trimmed === 'data') {
+        path = '';
+      }
+    }
     this.currentPath = path;
     try {
       sessionStorage.setItem('dockraft_files_current_path', path);
