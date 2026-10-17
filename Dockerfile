@@ -37,8 +37,9 @@ ENV HOME=/home/steam \
     PALWORLD_DATA_DIR=/home/steam/steamcmd/palworld \
     BACKUP_DIR=/home/steam/palworld-backups
 
-# Create necessary directories
+# Create necessary directories and symlinks
 RUN mkdir -p /home/steam/steamcmd/palworld /home/steam/palworld-backups /app/data /home/steam/scripts && \
+    ln -sf /home/steam/steamcmd/steamcmd.sh /usr/local/bin/steamcmd && \
     chown -R steam:steam /home/steam /app
 
 # Setup Palworld Server Manager Web Panel

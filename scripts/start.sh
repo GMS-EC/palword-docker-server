@@ -5,13 +5,18 @@ PAL_ROOT="${PALWORLD_DATA_DIR:-/home/steam/steamcmd/palworld}"
 mkdir -p "$PAL_ROOT"
 cd "$PAL_ROOT" || exit 1
 
+STEAMCMD_BIN="/home/steam/steamcmd/steamcmd.sh"
+if [ ! -f "$STEAMCMD_BIN" ]; then
+    STEAMCMD_BIN=$(command -v steamcmd || command -v steamcmd.sh || echo "steamcmd")
+fi
+
 echo "[Palworld Server Manager] Verificando instalación de Palworld Dedicated Server..."
 
 # 1. Si no existe el script PalServer.sh, instalar automáticamente
 if [ ! -f "${PAL_ROOT}/PalServer.sh" ]; then
     if [ "${UPDATE_ON_START:-true}" = "true" ] || [ "${AUTO_INSTALL:-true}" = "true" ]; then
         echo "[Palworld Server Manager] Servidor no detectado. Iniciando instalación de Palworld vía SteamCMD..."
-        steamcmd +force_install_dir "$PAL_ROOT" +login anonymous +app_update 2394010 validate +quit
+        "$STEAMCMD_BIN" +force_install_dir "$PAL_ROOT" +login anonymous +app_update 2394010 validate +quit
     else
         echo "[Palworld Server Manager] [AVISO] El servidor de Palworld no está instalado aún."
         echo "[Palworld Server Manager] Accede al panel web (http://localhost:${PANEL_PORT:-8080}) para configurar e instalarlo."
@@ -32,7 +37,7 @@ fi
 
 if [ "$DO_UPDATE" = "true" ]; then
     echo "[Palworld Server Manager] Verificando actualizaciones con SteamCMD..."
-    steamcmd +force_install_dir "$PAL_ROOT" +login anonymous +app_update 2394010 validate +quit || true
+    "$STEAMCMD_BIN" +force_install_dir "$PAL_ROOT" +login anonymous +app_update 2394010 validate +quit || true
 fi
 
 # 3. Compilar configuración inicial si no existe PalWorldSettings.ini

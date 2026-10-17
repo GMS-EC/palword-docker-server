@@ -111,6 +111,11 @@ class ProcessManager:
         clean_line = message.rstrip("\r\n")
         if not clean_line:
             return
+
+        # Filtrar consultas periódicas de telemetría REST API para no saturar la consola del servidor
+        if "REST accessed endpoint" in clean_line:
+            return
+
         self.log_buffer.append(clean_line)
         dead_ws = set()
         payload = json.dumps({"type": "log", "data": clean_line})
