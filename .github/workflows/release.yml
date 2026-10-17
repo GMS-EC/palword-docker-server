@@ -92,10 +92,12 @@ jobs:
             gh release delete "$TAG" --yes 2>/dev/null || true
             gh release create "$TAG" \
               --title "$TAG" \
-              --notes-file RELEASE_NOTES.md
+              --notes-file RELEASE_NOTES.md \
+              --latest
           else
-            # Actualizar el título y notas del release existente
-            gh release edit "$TAG" --title "$TAG" --notes-file RELEASE_NOTES.md || true
+            # Publicar y actualizar el release asegurando que salga de borrador (Draft) a Publicado (Latest)
+            gh release edit "$TAG" --title "$TAG" --notes-file RELEASE_NOTES.md --draft=false --latest || \
+            gh release create "$TAG" --title "$TAG" --notes-file RELEASE_NOTES.md --latest
           fi
 
   docker:
