@@ -116,66 +116,31 @@ const Settings = {
   },
 
   syncCrossplayToUI(rawVal) {
-    const str = String(rawVal || '').replace(/[()"]/g, '');
-    const platforms = str.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
-    const hasConsole = platforms.includes('xbox') || platforms.includes('ps5') || platforms.includes('mac');
-    
+    const str = String(rawVal || '').replace(/[()"]/g, '').toLowerCase();
+    const isEnabled = str.includes('xbox') || str.includes('ps5') || str.includes('mac') || str === 'true' || str === 'activado';
+
     const toggle = document.getElementById('toggle-crossplay-enabled');
-    if (toggle) toggle.checked = hasConsole;
+    if (toggle) toggle.checked = isEnabled;
 
-    const cbXbox = document.getElementById('crossplay-plat-xbox');
-    if (cbXbox) cbXbox.checked = platforms.includes('xbox');
+    const label = document.getElementById('crossplay-status-label');
+    if (label) {
+      label.textContent = isEnabled ? this._t('t_settings_crossplay_on', 'Activado') : this._t('t_settings_crossplay_off', 'Desactivado');
+      label.style.color = isEnabled ? '#58a6ff' : 'var(--text-dim)';
+    }
 
-    const cbPs5 = document.getElementById('crossplay-plat-ps5');
-    if (cbPs5) cbPs5.checked = platforms.includes('ps5');
-
-    const cbMac = document.getElementById('crossplay-plat-mac');
-    if (cbMac) cbMac.checked = platforms.includes('mac');
-
-    const picker = document.getElementById('crossplay-platforms-picker');
-    if (picker) picker.style.opacity = hasConsole ? '1' : '0.45';
+    const hiddenInput = document.getElementById('prop-CrossplayPlatforms');
+    if (hiddenInput) hiddenInput.value = isEnabled ? '(Steam,Xbox,PS5)' : '(Steam)';
   },
 
   onCrossplayToggle(enabled) {
-    const cbXbox = document.getElementById('crossplay-plat-xbox');
-    const cbPs5 = document.getElementById('crossplay-plat-ps5');
-    const cbMac = document.getElementById('crossplay-plat-mac');
-    const picker = document.getElementById('crossplay-platforms-picker');
-
-    if (enabled) {
-      if (cbXbox) cbXbox.checked = true;
-      if (cbPs5) cbPs5.checked = true;
-      if (cbMac) cbMac.checked = true;
-      if (picker) picker.style.opacity = '1';
-    } else {
-      if (cbXbox) cbXbox.checked = false;
-      if (cbPs5) cbPs5.checked = false;
-      if (cbMac) cbMac.checked = false;
-      if (picker) picker.style.opacity = '0.45';
+    const label = document.getElementById('crossplay-status-label');
+    if (label) {
+      label.textContent = enabled ? this._t('t_settings_crossplay_on', 'Activado') : this._t('t_settings_crossplay_off', 'Desactivado');
+      label.style.color = enabled ? '#58a6ff' : 'var(--text-dim)';
     }
-    this.syncCrossplayFromUI();
-  },
 
-  syncCrossplayFromUI() {
-    const cbXbox = document.getElementById('crossplay-plat-xbox')?.checked;
-    const cbPs5 = document.getElementById('crossplay-plat-ps5')?.checked;
-    const cbMac = document.getElementById('crossplay-plat-mac')?.checked;
-    const toggle = document.getElementById('toggle-crossplay-enabled');
-
-    const plats = ['Steam'];
-    if (cbXbox) plats.push('Xbox');
-    if (cbPs5) plats.push('PS5');
-    if (cbMac) plats.push('Mac');
-
-    const hasConsole = plats.length > 1;
-    if (toggle) toggle.checked = hasConsole;
-
-    const picker = document.getElementById('crossplay-platforms-picker');
-    if (picker) picker.style.opacity = hasConsole ? '1' : '0.45';
-
-    const formatted = `(${plats.join(',')})`;
     const hiddenInput = document.getElementById('prop-CrossplayPlatforms');
-    if (hiddenInput) hiddenInput.value = formatted;
+    if (hiddenInput) hiddenInput.value = enabled ? '(Steam,Xbox,PS5)' : '(Steam)';
 
     this.markDirty();
   },

@@ -217,6 +217,9 @@ def _build_server_stats_dict() -> Dict[str, Any]:
     if process_manager.started_at:
         started_at_str = time.strftime("%d/%m/%Y %H:%M:%S", time.localtime(process_manager.started_at))
 
+    cp_raw = str(ini.get("CrossplayPlatforms", "(Steam,Xbox,PS5)")).lower()
+    crossplay_on = "xbox" in cp_raw or "ps5" in cp_raw or "true" in cp_raw or "activado" in cp_raw or "habilitado" in cp_raw
+
     return {
         "status": curr_status,
         "is_installed": installed,
@@ -244,6 +247,8 @@ def _build_server_stats_dict() -> Dict[str, Any]:
         "server_fps": metrics.get("server_fps", 0.0),
         "server_type": "palworld",
         "server_version": "SteamCMD",
+        "crossplay_platforms": "Habilitado" if crossplay_on else "Desactivado",
+        "crossplay_enabled": crossplay_on,
         "app_version": get_app_version()
     }
 

@@ -511,8 +511,16 @@ const Console = {
       if (topMotd) topMotd.textContent = stats.motd || this._t('t_console_motd_default', 'Palworld Dedicated Server');
       const topCrossplay = document.getElementById('top-server-crossplay');
       if (topCrossplay) {
-        const cp = stats.crossplay_platforms || (stats.ini_settings && stats.ini_settings.CrossplayPlatforms) || 'Steam / Xbox / PS5';
-        topCrossplay.textContent = cp;
+        const rawCp = stats.crossplay_platforms || (stats.ini_settings && stats.ini_settings.CrossplayPlatforms) || '';
+        const rawStr = String(rawCp).toLowerCase();
+        const isEnabled = rawStr.includes('xbox') || rawStr.includes('ps5') || rawStr.includes('mac') || rawStr === 'true' || rawStr === 'activado' || rawStr === 'habilitado' || rawStr.includes('steam / xbox');
+        if (isEnabled) {
+          topCrossplay.textContent = this._t('banner_crossplay_enabled', 'Habilitado');
+          topCrossplay.style.color = '#3fb950';
+        } else {
+          topCrossplay.textContent = this._t('banner_crossplay_disabled', 'Desactivado');
+          topCrossplay.style.color = 'var(--text-dim)';
+        }
       }
     }
 

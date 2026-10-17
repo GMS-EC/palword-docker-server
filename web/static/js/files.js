@@ -91,7 +91,7 @@ const Files = {
         dropOverlay.style.display = 'flex';
         const dropTarget = document.getElementById('file-dropzone-target-text');
         if (dropTarget) {
-          dropTarget.textContent = this.trf('t_file_dropzone_subtitle', [this.currentPath ? `/data/${this.currentPath}` : '/data'], `Se guardarán en: ${this.currentPath ? `/data/${this.currentPath}` : '/data'}`);
+          dropTarget.textContent = this.trf('t_file_dropzone_subtitle', [this.currentPath ? `/palworld/${this.currentPath}` : '/palworld'], `Se guardarán en: ${this.currentPath ? `/palworld/${this.currentPath}` : '/palworld'}`);
         }
       }
     });
@@ -165,12 +165,19 @@ const Files = {
 
     const dropTarget = document.getElementById('file-dropzone-target-text');
     if (dropTarget) {
-      dropTarget.textContent = this.trf('t_file_dropzone_subtitle', [path ? `/data/${path}` : '/data'], `Se guardarán en: ${path ? `/data/${path}` : '/data'}`);
+      dropTarget.textContent = this.trf('t_file_dropzone_subtitle', [path ? `/palworld/${path}` : '/palworld'], `Se guardarán en: ${path ? `/palworld/${path}` : '/palworld'}`);
     }
 
     try {
       const res = await fetch(`/api/files/list?path=${encodeURIComponent(path)}`);
-      if (!res.ok) throw new Error(this.tr('t_file_err_list', 'No se pudieron listar los archivos'));
+      if (!res.ok) {
+        let msg = this.tr('t_file_err_list', 'No se pudieron listar los archivos');
+        try {
+          const errData = await res.json();
+          if (errData && errData.detail) msg += `: ${errData.detail}`;
+        } catch (_) {}
+        throw new Error(msg);
+      }
       const data = await res.json();
       this.rawItems = Array.isArray(data.items) ? data.items : [];
       this.renderFileList(this.rawItems);
@@ -191,7 +198,7 @@ const Files = {
     container.innerHTML = '';
     const rootCrumb = document.createElement('span');
     rootCrumb.className = 'crumb-item';
-    rootCrumb.textContent = '/data';
+    rootCrumb.textContent = '/palworld';
     rootCrumb.addEventListener('click', () => this.loadDirectory(''));
     container.appendChild(rootCrumb);
 
@@ -696,7 +703,7 @@ const Files = {
 
   async copyPath(filePath) {
     this.hideContextMenu();
-    const fullRel = `/data/${filePath}`;
+    const fullRel = `/palworld/${filePath}`;
     try {
       await navigator.clipboard.writeText(fullRel);
       if (typeof App !== 'undefined' && App.showToast) {

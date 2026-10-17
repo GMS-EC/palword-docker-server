@@ -28,7 +28,12 @@ class FileManager:
             path.resolve().relative_to(parent.resolve())
             return True
         except (ValueError, AttributeError):
-            return False
+            try:
+                p_str = os.path.abspath(str(path.resolve()))
+                parent_str = os.path.abspath(str(parent.resolve()))
+                return p_str == parent_str or p_str.startswith(parent_str + os.sep)
+            except Exception:
+                return False
 
     def _rel_to_root(self, path: Path) -> str:
         """Calcula la ruta relativa respecto a la raíz correspondiente."""
@@ -51,6 +56,14 @@ class FileManager:
     def _resolve_safe_path(self, relative_path: str = "") -> Path:
         clean_rel = (relative_path or "").replace("\\", "/").strip("/")
         
+        # Normalizar si el frontend envía alias como "data", "/data", "palworld", "/palworld"
+        if clean_rel in ("data", "palworld", "/data", "/palworld"):
+            clean_rel = ""
+        elif clean_rel.startswith("data/"):
+            clean_rel = clean_rel[len("data/"):].lstrip("/")
+        elif clean_rel.startswith("palworld/"):
+            clean_rel = clean_rel[len("palworld/"):].lstrip("/")
+
         # Acceso transparente a respaldos
         if clean_rel == "backups" or clean_rel.startswith("backups/"):
             sub_rel = clean_rel[len("backups"):].lstrip("/")
@@ -59,14 +72,33 @@ class FileManager:
                 raise HTTPException(status_code=403, detail="Acceso denegado fuera de la carpeta de respaldos.")
             return target
 
+        # Asegurar que el directorio base de datos existe
+        try:
+            self.base_dir.mkdir(parents=True, exist_ok=True)
+        except Exception:
+            pass
+
         target = (self.base_dir / clean_rel).resolve()
         if not self._is_subpath(target, self.base_dir):
             raise HTTPException(status_code=403, detail="Acceso denegado: intento de salida de directorio.")
         return target
 
     def list_directory(self, relative_path: str = "") -> Dict[str, Any]:
-        """Lista el contenido de un directorio con metadatos completos."""
-        safe_path = self._resolve_safe_path(relative_path)
+        """Lista el contenido de un directorio con metadatos completos y tolerancia a permisos."""
+        try:
+            safe_path = self._resolve_safe_path(relative_path)
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Ruta inválida: {e}")
+
+        # Si el directorio no existe pero es la raíz, crearlo
+        if not safe_path.exists() and (not relative_path or relative_path in ("data", "palworld", "/data", "/palworld")):
+            try:
+                safe_path.mkdir(parents=True, exist_ok=True)
+            except Exception:
+                pass
+
         if not safe_path.exists():
             return {"current_path": relative_path, "items": []}
         if not safe_path.is_dir():
@@ -75,19 +107,28 @@ class FileManager:
         items: List[Dict[str, Any]] = []
 
         # Si estamos en la raíz del servidor, exponer la carpeta virtual de respaldos
-        if safe_path.resolve() == self.base_dir.resolve():
-            items.append({
-                "name": "backups",
-                "type": "directory",
-                "size_formatted": "-",
-                "size_bytes": 0,
-                "modified": "-",
-                "extension": "",
-                "is_special": True,
-                "path": "backups"
-            })
+        try:
+            if safe_path.resolve() == self.base_dir.resolve():
+                items.append({
+                    "name": "backups",
+                    "type": "directory",
+                    "size_formatted": "-",
+                    "size_bytes": 0,
+                    "modified": "-",
+                    "extension": "",
+                    "is_special": True,
+                    "path": "backups"
+                })
+        except Exception:
+            pass
 
-        for entry in safe_path.iterdir():
+        try:
+            entries = list(safe_path.iterdir())
+        except Exception as iter_err:
+            print(f"[FileManager] Advertencia al iterar directorio {safe_path}: {iter_err}")
+            entries = []
+
+        for entry in entries:
             # Ocultar archivos protegidos del panel
             if entry.name in PROTECTED_FILES:
                 continue

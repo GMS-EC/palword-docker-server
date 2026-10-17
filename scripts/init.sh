@@ -14,6 +14,7 @@ fi
 
 # Crear directorios necesarios
 mkdir -p /home/steam/steamcmd/palworld /home/steam/palworld-backups /app/data
+chmod -R 777 /home/steam/steamcmd/palworld /home/steam/palworld-backups /app/data 2>/dev/null || true
 chown -R steam:steam /home/steam /home/steam/palworld-backups /app /app/data 2>/dev/null || true
 
 # Configurar Timezone del sistema desde la variable TZ
