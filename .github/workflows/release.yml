@@ -88,12 +88,14 @@ jobs:
             git tag -a "$TAG" -m "$TAG"
             git push origin "$TAG"
             
+            # Limpiar release previo si existiera en GitHub para evitar conflictos
+            gh release delete "$TAG" --yes 2>/dev/null || true
             gh release create "$TAG" \
               --title "$TAG" \
               --notes-file RELEASE_NOTES.md
           else
-            # Actualizar el título del release existente para mostrar únicamente la versión
-            gh release edit "$TAG" --title "$TAG" || true
+            # Actualizar el título y notas del release existente
+            gh release edit "$TAG" --title "$TAG" --notes-file RELEASE_NOTES.md || true
           fi
 
   docker:
