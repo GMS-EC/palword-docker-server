@@ -16,6 +16,46 @@
     </button>
   </div>
 
+  <!-- Public Connection / Playit.gg Card -->
+  <div class="card" style="margin-bottom: 20px; border-left: 3px solid #38bdf8;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap;">
+      <div>
+        <div class="card-title" style="margin-bottom: 4px; display: flex; align-items: center; gap: 8px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          <span data-i18n="t_webhook_conn_title">Dirección de Conexión Pública (Playit.gg / Túnel / Proxy)</span>
+        </div>
+        <p data-i18n="t_webhook_conn_subtitle" style="color: var(--text-muted); font-size: 0.85rem; margin-top: 4px; margin-bottom: 0;">
+          Si tu servidor es privado o utiliza Playit.gg, define aquí el dominio y puerto asignados para que las notificaciones muestren los datos de conexión reales para los jugadores.
+        </p>
+      </div>
+      <label class="toggle-switch">
+        <input type="checkbox" id="webhook-conn-enable" onchange="Webhooks.onConnectionToggle(this.checked)">
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <div id="webhook-conn-fields" style="margin-top: 16px; display: grid; grid-template-columns: 2fr 1fr; gap: 14px;">
+      <div class="form-group" style="margin-bottom: 0;">
+        <label class="form-label" for="webhook-conn-address" data-i18n="t_webhook_conn_address_label">Dominio o IP Pública</label>
+        <input type="text" class="form-input" id="webhook-conn-address" placeholder="ej: playit-tunnel.gl.at.ply.gg o 147.185.221.16" oninput="Webhooks.updateConnectionPreview()">
+        <div class="field-hint" data-i18n="t_webhook_conn_address_hint">Dominio público o IP asignada por tu túnel Playit.gg, ngrok o proveedor de hosting.</div>
+      </div>
+      <div class="form-group" style="margin-bottom: 0;">
+        <label class="form-label" for="webhook-conn-port" data-i18n="t_webhook_conn_port_label">Puerto Público Asignado</label>
+        <input type="text" class="form-input" id="webhook-conn-port" placeholder="ej: 19821" oninput="Webhooks.updateConnectionPreview()">
+        <div class="field-hint" data-i18n="t_webhook_conn_port_hint">Puerto externo asignado por el túnel.</div>
+      </div>
+    </div>
+
+    <div id="webhook-conn-preview-box" style="margin-top: 14px; padding: 10px 14px; background: rgba(56, 189, 248, 0.08); border: 1px dashed rgba(56, 189, 248, 0.3); border-radius: 6px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+      <div style="font-size: 0.82rem; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
+        <span data-i18n="t_webhook_conn_preview_label">Vista previa en notificaciones:</span>
+      </div>
+      <code id="webhook-conn-preview" style="background: rgba(0, 0, 0, 0.4); padding: 4px 10px; border-radius: 4px; color: #38bdf8; font-weight: 600; font-size: 0.85rem;">8211 UDP (Local / Predeterminado)</code>
+    </div>
+  </div>
+
   <!-- Compact Channels Grid -->
   <div class="grid-3" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 16px; margin-bottom: 24px;">
     
@@ -215,28 +255,6 @@
             <span data-i18n="t_webhook_ev_player_leave_title">Jugador se Desconecta</span>
           </div>
           <div class="event-label-desc" data-i18n="t_webhook_ev_player_leave_desc">Alerta opcional cada vez que un jugador sale del mundo de Palworld.</div>
-        </div>
-      </label>
-
-      <label class="event-checkbox-card">
-        <input type="checkbox" id="webhook-event-lowtps" checked>
-        <div>
-          <div class="event-label-title" style="display: flex; align-items: center; gap: 6px;">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
-            <span data-i18n="t_webhook_ev_lowtps_title">Sobrecarga de Servidor / Lag Sostenido</span>
-          </div>
-          <div class="event-label-desc" data-i18n="t_webhook_ev_lowtps_desc">Alerta proactiva si el uso de CPU o memoria genera sobrecarga prolongada.</div>
-        </div>
-      </label>
-
-      <label class="event-checkbox-card">
-        <input type="checkbox" id="webhook-event-plugin" checked>
-        <div>
-          <div class="event-label-title" style="display: flex; align-items: center; gap: 6px;">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
-            <span data-i18n="t_webhook_ev_plugin_title">Actualización de Plugins</span>
-          </div>
-          <div class="event-label-desc" data-i18n="t_webhook_ev_plugin_desc">Alerta cuando se detectan nuevas versiones disponibles de tus plugins en SpigotMC.</div>
         </div>
       </label>
 

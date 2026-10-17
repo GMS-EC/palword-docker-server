@@ -34,6 +34,16 @@ const Webhooks = {
   populateUI(cfg) {
     if (!cfg) return;
 
+    // Connection (Playit.gg / Proxy / Public Address)
+    const conn = cfg.connection || {};
+    const connEn = document.getElementById('webhook-conn-enable');
+    const connAddr = document.getElementById('webhook-conn-address');
+    const connPort = document.getElementById('webhook-conn-port');
+    if (connEn) connEn.checked = !!conn.custom_address_enabled;
+    if (connAddr) connAddr.value = conn.display_address || '';
+    if (connPort) connPort.value = conn.display_port || '';
+    this.onConnectionToggle(!!conn.custom_address_enabled, false);
+
     // Discord
     const discord = cfg.discord || {};
     const dEn = document.getElementById('webhook-discord-enable');
@@ -78,8 +88,6 @@ const Webhooks = {
     const evTask = document.getElementById('webhook-event-task');
     const evPlayer = document.getElementById('webhook-event-player');
     const evPlayerLeave = document.getElementById('webhook-event-player-leave');
-    const evLowTps = document.getElementById('webhook-event-lowtps');
-    const evPlugin = document.getElementById('webhook-event-plugin');
 
     if (evStart) evStart.checked = ev.server_start !== false;
     if (evStop) evStop.checked = ev.server_stop !== false;
@@ -88,8 +96,6 @@ const Webhooks = {
     if (evTask) evTask.checked = ev.task_executed !== false;
     if (evPlayer) evPlayer.checked = ev.player_join !== false;
     if (evPlayerLeave) evPlayerLeave.checked = ev.player_leave !== false;
-    if (evLowTps) evLowTps.checked = ev.low_tps !== false;
-    if (evPlugin) evPlugin.checked = ev.plugin_update !== false;
 
     this.updateStatusBadges();
   },
@@ -182,6 +188,45 @@ const Webhooks = {
     this.currentModalChannel = null;
   },
 
+  onConnectionToggle(isEnabled, autoSave = false) {
+    const fields = document.getElementById('webhook-conn-fields');
+    const addrInput = document.getElementById('webhook-conn-address');
+    const portInput = document.getElementById('webhook-conn-port');
+    if (fields) {
+      fields.style.opacity = isEnabled ? '1' : '0.45';
+      fields.style.pointerEvents = isEnabled ? 'auto' : 'none';
+    }
+    if (addrInput) addrInput.disabled = !isEnabled;
+    if (portInput) portInput.disabled = !isEnabled;
+    this.updateConnectionPreview();
+
+    if (autoSave) {
+      if (!this.config) this.config = {};
+      if (!this.config.connection) this.config.connection = {};
+      this.config.connection.custom_address_enabled = isEnabled;
+    }
+  },
+
+  updateConnectionPreview() {
+    const en = document.getElementById('webhook-conn-enable')?.checked;
+    const addr = (document.getElementById('webhook-conn-address')?.value || '').trim();
+    const port = (document.getElementById('webhook-conn-port')?.value || '').trim();
+    const previewEl = document.getElementById('webhook-conn-preview');
+    if (!previewEl) return;
+
+    if (en && (addr || port)) {
+      let formatted = addr || '0.0.0.0';
+      if (port && !formatted.includes(`:${port}`)) {
+        formatted += `:${port}`;
+      }
+      previewEl.textContent = `${formatted} (Playit / Proxy)`;
+      previewEl.style.color = '#38bdf8';
+    } else {
+      previewEl.textContent = '8211 UDP (Local / Predeterminado)';
+      previewEl.style.color = 'var(--text-muted)';
+    }
+  },
+
   async toggleChannel(channel, isEnabled) {
     if (!this.config) this.config = {};
     if (!this.config[channel]) this.config[channel] = {};
@@ -206,6 +251,11 @@ const Webhooks = {
     if (btnSave) btnSave.disabled = true;
 
     const payload = {
+      connection: {
+        custom_address_enabled: document.getElementById('webhook-conn-enable')?.checked || false,
+        display_address: (document.getElementById('webhook-conn-address')?.value || '').trim(),
+        display_port: (document.getElementById('webhook-conn-port')?.value || '').trim()
+      },
       discord: {
         enabled: document.getElementById('webhook-discord-enable')?.checked || false,
         webhook_url: (document.getElementById('webhook-discord-url')?.value || '').trim()
@@ -232,9 +282,7 @@ const Webhooks = {
         backup_created: document.getElementById('webhook-event-backup')?.checked || false,
         task_executed: document.getElementById('webhook-event-task')?.checked || false,
         player_join: document.getElementById('webhook-event-player')?.checked || false,
-        player_leave: document.getElementById('webhook-event-player-leave')?.checked || false,
-        low_tps: document.getElementById('webhook-event-lowtps')?.checked || false,
-        plugin_update: document.getElementById('webhook-event-plugin')?.checked || false
+        player_leave: document.getElementById('webhook-event-player-leave')?.checked || false
       }
     };
 

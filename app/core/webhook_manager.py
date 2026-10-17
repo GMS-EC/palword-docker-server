@@ -16,6 +16,11 @@ from app.core.fs_utils import atomic_write_json
 logger = logging.getLogger("palworld.webhooks")
 
 DEFAULT_CONFIG: Dict[str, Any] = {
+    "connection": {
+        "custom_address_enabled": False,
+        "display_address": "",
+        "display_port": ""
+    },
     "discord": {
         "enabled": False,
         "webhook_url": ""
@@ -42,9 +47,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
         "backup_created": True,
         "task_executed": True,
         "player_join": True,
-        "player_leave": True,
-        "low_tps": False,
-        "plugin_update": False
+        "player_leave": True
     }
 }
 
@@ -84,8 +87,10 @@ class WebhookManager:
 
     def save_config(self, new_config: Dict[str, Any]) -> Dict[str, Any]:
         """Guarda la configuración atómicamente a disco."""
-        for section in ["discord", "telegram", "email", "events"]:
+        for section in ["connection", "discord", "telegram", "email", "events"]:
             if section in new_config and isinstance(new_config[section], dict):
+                if section not in self.config or not isinstance(self.config[section], dict):
+                    self.config[section] = {}
                 self.config[section].update(new_config[section])
 
         # Sincronizar también con runtime_config para compatibilidad
@@ -102,10 +107,27 @@ class WebhookManager:
 
     def _get_server_info(self) -> Dict[str, Any]:
         name = settings.server_name or "Palworld Dedicated Server"
-        port = f"{settings.server_port} UDP"
+        conn_cfg = self.config.get("connection", {})
+        custom_enabled = bool(conn_cfg.get("custom_address_enabled", False))
+        display_addr = str(conn_cfg.get("display_address", "")).strip()
+        display_port = str(conn_cfg.get("display_port", "")).strip()
+
+        if custom_enabled and display_addr:
+            if display_port:
+                full_addr = f"{display_addr}:{display_port}"
+                port_str = f"{display_port} UDP"
+            else:
+                full_addr = display_addr
+                port_str = display_addr
+        else:
+            full_addr = f"127.0.0.1:{settings.server_port}"
+            port_str = f"{settings.server_port} UDP"
+
         return {
             "name": name,
-            "port": port,
+            "port": port_str,
+            "address": full_addr,
+            "is_custom": custom_enabled and bool(display_addr),
             "type": "Palworld Dedicated Server",
             "version": "SteamCMD"
         }
@@ -114,6 +136,8 @@ class WebhookManager:
         info = self._get_server_info()
         name = info["name"]
         port = info["port"]
+        address = info["address"]
+        is_custom = info.get("is_custom", False)
 
         status_badge = "En Línea"
         if event_type in ("server_stop", "SHUTDOWN"):
@@ -131,11 +155,14 @@ class WebhookManager:
         elif event_type in ("test", "TEST"):
             status_badge = "Canal Verificado"
 
-        return [
+        fields = [
             {"name": "Servidor", "value": f"`{name}`", "inline": True},
-            {"name": "Puerto", "value": f"`{port}`", "inline": True},
+            {"name": "Conexión (Playit / IP)" if is_custom else "Puerto", "value": f"`{address if is_custom else port}`", "inline": True},
             {"name": "Estado", "value": status_badge, "inline": True}
         ]
+        if is_custom and port and port != address:
+            fields.append({"name": "Puerto Asignado", "value": f"`{port}`", "inline": True})
+        return fields
 
     # --- Dispatchers ---
 
@@ -355,8 +382,9 @@ class WebhookManager:
         """Envía una prueba de conexión al canal seleccionado."""
         server_info = self._get_server_info()
         name = server_info["name"]
+        conn_note = f" (Dirección: `{server_info['address']}`)" if server_info.get("is_custom") else ""
         test_title = "Prueba de Notificación — Palworld"
-        test_msg = f"¡Conexión verificada exitosamente! Las alertas automáticas del servidor de Palworld **{name}** están operativas."
+        test_msg = f"¡Conexión verificada exitosamente! Las alertas automáticas del servidor de Palworld **{name}**{conn_note} están operativas."
         test_fields = self._build_default_fields("test", 0x5865f2)
 
         try:
@@ -413,7 +441,9 @@ class WebhookManager:
         self.dispatch("server_start", "Servidor de Palworld Iniciando", f"El servidor **{settings.server_name}** está iniciando y cargando el mundo.", color=0xf59e0b)
 
     async def notify_started(self):
-        self.dispatch("server_start", "Servidor de Palworld En Línea", f"¡El servidor **{settings.server_name}** ha arrancado con éxito y está listo para recibir domadores!", color=0x10b981)
+        info = self._get_server_info()
+        conn_msg = f"\n🎮 **Conéctate en:** `{info['address']}`" if info.get("is_custom") else ""
+        self.dispatch("server_start", "Servidor de Palworld En Línea", f"¡El servidor **{settings.server_name}** ha arrancado con éxito y está listo para recibir domadores!{conn_msg}", color=0x10b981)
 
     async def notify_stopped(self):
         self.dispatch("server_stop", "Servidor de Palworld Detenido", f"El servidor **{settings.server_name}** se ha detenido correctamente.", color=0xef4444)
