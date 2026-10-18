@@ -487,7 +487,6 @@ const Console = {
     const topName = document.getElementById('top-server-name');
     const topVersion = document.getElementById('top-server-version');
     const topMotd = document.getElementById('top-server-motd');
-    const topType = document.getElementById('top-server-type');
 
     this.lastStats = stats;
     if (topTz) topTz.textContent = stats.timezone || 'America/Guayaquil';
@@ -505,7 +504,6 @@ const Console = {
       if (topPlayers) topPlayers.textContent = '--';
       if (topVersion) topVersion.textContent = this._t('t_console_banner_no_install', 'No instalado');
       if (topMotd) topMotd.textContent = this._t('t_console_banner_no_install', 'No instalado');
-      if (topType) topType.textContent = '--';
     } else {
       const isOnline = stats.status === 'RUNNING';
       const isStarting = stats.status === 'STARTING';
