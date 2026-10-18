@@ -212,9 +212,10 @@ def _build_server_stats_dict() -> Dict[str, Any]:
     max_players = ini.get("ServerPlayerMaxNum") or settings.max_players
     tz_str = os.getenv("TZ", "America/Guayaquil")
 
-    pid = process_manager.get_server_pid()
+    is_off = (curr_status == "OFFLINE")
+    pid = None if is_off else process_manager.get_server_pid()
     started_at_str = "--"
-    if process_manager.started_at:
+    if process_manager.started_at and not is_off:
         started_at_str = time.strftime("%d/%m/%Y %H:%M:%S", time.localtime(process_manager.started_at))
 
     cp_raw = str(ini.get("CrossplayPlatforms", "(Steam,Xbox,PS5)")).lower()
@@ -224,27 +225,27 @@ def _build_server_stats_dict() -> Dict[str, Any]:
         "status": curr_status,
         "is_installed": installed,
         "pid": pid,
-        "started_at": process_manager.started_at,
+        "started_at": None if is_off else process_manager.started_at,
         "started_at_str": started_at_str,
-        "uptime_formatted": metrics.get("uptime_formatted", "--"),
+        "uptime_formatted": "--" if is_off else metrics.get("uptime_formatted", "--"),
         "timezone": tz_str,
-        "cpu_percent": metrics.get("cpu_percent", 0.0),
-        "memory_mb": metrics.get("memory_mb", 0),
-        "current_ram_mb": metrics.get("memory_mb", 0),
-        "current_mem_mb": metrics.get("memory_mb", 0),
+        "cpu_percent": 0.0 if is_off else metrics.get("cpu_percent", 0.0),
+        "memory_mb": 0 if is_off else metrics.get("memory_mb", 0),
+        "current_ram_mb": 0 if is_off else metrics.get("memory_mb", 0),
+        "current_mem_mb": 0 if is_off else metrics.get("memory_mb", 0),
         "assigned_memory_mb": metrics.get("assigned_memory_mb", 8192),
         "assigned_ram_mb": metrics.get("assigned_memory_mb", 8192),
-        "memory_percent": metrics.get("ram_percent", 0.0),
-        "ram_percent": metrics.get("ram_percent", 0.0),
+        "memory_percent": 0.0 if is_off else metrics.get("ram_percent", 0.0),
+        "ram_percent": 0.0 if is_off else metrics.get("ram_percent", 0.0),
         "disk_used_mb": metrics.get("disk_used_mb", 10240),
         "disk_limit_mb": metrics.get("disk_limit_mb", 102400),
         "disk_percent": metrics.get("disk_percent", 10.0),
-        "online_players": metrics.get("online_players", 0),
+        "online_players": 0 if is_off else metrics.get("online_players", 0),
         "max_players": max_players,
         "server_name": server_name,
         "server_port": game_port,
         "motd": server_desc,
-        "server_fps": metrics.get("server_fps", 0.0),
+        "server_fps": 0.0 if is_off else metrics.get("server_fps", 0.0),
         "server_type": "palworld",
         "server_version": "SteamCMD",
         "crossplay_platforms": "Habilitado" if crossplay_on else "Desactivado",
@@ -1014,7 +1015,7 @@ async def file_bulk_compress(req: FileBulkCompressRequest):
 @app.get("/api/diagnostics/system", dependencies=[Depends(require_auth)])
 async def api_diagnostics_system():
     vm = psutil.virtual_memory()
-    disk = psutil.disk_usage(str(settings.palworld_data_dir))
+    curr_metrics = metrics_manager.get_current_metrics()
     pid = process_manager.get_server_pid()
 
     return {
@@ -1025,13 +1026,16 @@ async def api_diagnostics_system():
         "os_release": platform.release(),
         "python_version": platform.python_version(),
         "cpu_count": psutil.cpu_count(logical=True),
-        "cpu_percent": psutil.cpu_percent(interval=None),
-        "ram_total_gb": round(vm.total / (1024**3), 2),
-        "ram_used_gb": round(vm.used / (1024**3), 2),
-        "ram_percent": vm.percent,
-        "disk_total_gb": round(disk.total / (1024**3), 2),
-        "disk_used_gb": round(disk.used / (1024**3), 2),
-        "disk_percent": disk.percent,
+        "cpu_percent": curr_metrics.get("cpu_percent", 0.0),
+        "ram_total_gb": curr_metrics.get("ram_total_gb", round(vm.total / (1024**3), 2)),
+        "ram_used_gb": curr_metrics.get("ram_used_gb", round(vm.used / (1024**3), 2)),
+        "ram_percent": curr_metrics.get("ram_percent", vm.percent),
+        "disk_total_gb": curr_metrics.get("disk_total_gb", 100.0),
+        "disk_used_gb": curr_metrics.get("disk_used_gb", 0.0),
+        "disk_percent": curr_metrics.get("disk_percent", 0.0),
+        "container_metrics": curr_metrics,
+        "host_ram_total_gb": round(vm.total / (1024**3), 2),
+        "host_ram_used_gb": round(vm.used / (1024**3), 2),
         "ports": {
             "game_udp": settings.server_port,
             "rest_api_tcp": settings.rest_api_port,

@@ -45,10 +45,16 @@ if [ -f "/home/steam/scripts/generate-config.sh" ]; then
     bash /home/steam/scripts/generate-config.sh
 fi
 
-# 4. Asegurar permisos de ejecución en PalServer.sh
+# 4. Asegurar permisos de ejecución y comportamiento de proceso limpio en PalServer.sh
 chmod +x "${PAL_ROOT}/PalServer.sh" 2>/dev/null || true
 if [ -f "${PAL_ROOT}/Pal/Binaries/Linux/PalServer-Linux-Shipping" ]; then
     chmod +x "${PAL_ROOT}/Pal/Binaries/Linux/PalServer-Linux-Shipping" 2>/dev/null || true
+fi
+
+# Asegurar que PalServer.sh use exec al invocar el binario PalServer-Linux-Shipping
+# para que no deje procesos intermedios que impidan propagar señales de apagado
+if [ -f "${PAL_ROOT}/PalServer.sh" ]; then
+    sed -i -E 's/^([[:space:]]*)("\$SCRIPT_DIR\/Pal\/Binaries\/Linux\/PalServer-Linux-Shipping"|\$UE_BIN)/\1exec \2/' "${PAL_ROOT}/PalServer.sh" 2>/dev/null || true
 fi
 
 # 5. Construir argumentos de inicio dinámicamente desde PalWorldSettings.ini y configuración del Panel Web

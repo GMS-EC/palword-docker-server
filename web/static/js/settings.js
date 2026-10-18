@@ -48,7 +48,6 @@ const Settings = {
     const isInstalled = this.serverStatus.is_installed !== false;
     const status = this.serverStatus.status || 'OFFLINE';
     const statusEl = document.getElementById('settings-badge-status');
-    const bannerStatusEl = document.getElementById('settings-banner-server-status');
     const restartBtn = document.getElementById('btn-settings-restart-now');
     const emptyState = document.getElementById('settings-empty-state');
     const container = document.getElementById('settings-container');
@@ -73,15 +72,14 @@ const Settings = {
       statusEl.innerHTML = `<span class="badge" style="display:inline-flex; align-items:center; background-color: rgba(255,255,255,0.06); border: 1px solid ${color}; color: ${color}; font-size: 0.8rem; padding: 4px 10px;"><span style="display:inline-block; width:7px; height:7px; border-radius:50%; background-color:${color}; margin-right:6px;"></span>${text}</span>`;
     }
 
-    if (bannerStatusEl) {
-      bannerStatusEl.textContent = `Servidor ${text}`;
-      bannerStatusEl.style.color = color;
-      bannerStatusEl.style.borderColor = color;
-      bannerStatusEl.style.backgroundColor = isRunning ? 'rgba(63, 185, 80, 0.15)' : 'rgba(255,255,255,0.06)';
-    }
-
     if (restartBtn) {
       restartBtn.style.display = isRunning ? 'inline-flex' : 'none';
+    }
+
+    // Si el servidor no está en ejecución, ocultar el aviso de reinicio
+    if (!isRunning) {
+      const banner = document.getElementById('settings-status-banner');
+      if (banner) banner.style.display = 'none';
     }
   },
 
@@ -316,20 +314,16 @@ const Settings = {
 
         await this.loadRawProperties();
 
-        // Si el servidor está activo, ofrecer reiniciar para que Palworld aplique los cambios
+        // Si el servidor está activo, mostrar el cuadro de aviso para que el usuario sepa que debe reiniciar
+        const banner = document.getElementById('settings-status-banner');
         if (this.serverStatus && this.serverStatus.status === 'RUNNING') {
-          App.showToast('Configuración guardada en PalWorldSettings.ini.', 'success');
-          const shouldRestart = await App.confirm({
-            title: 'Configuración Guardada en Disco',
-            message: 'Los ajustes se escribieron exitosamente en PalWorldSettings.ini.\n\nEl servidor está en ejecución. Para que Palworld aplique los nuevos valores en el juego, ¿deseas reiniciar el servidor ahora?',
-            confirmText: 'Reiniciar Servidor Ahora',
-            cancelText: 'Más Tarde',
-            danger: false
-          });
-          if (shouldRestart) {
-            await this.restartServer();
+          if (banner) {
+            banner.style.display = 'block';
+            banner.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
           }
+          App.showToast('Configuración guardada en PalWorldSettings.ini. Reinicia el servidor para aplicar los cambios.', 'warning');
         } else {
+          if (banner) banner.style.display = 'none';
           App.showToast('Configuración guardada en PalWorldSettings.ini. Se aplicará al iniciar el servidor.', 'success');
         }
       } else {
@@ -380,20 +374,16 @@ const Settings = {
         this.setDirty(false);
         await this.fetchSettings();
 
+        const banner = document.getElementById('settings-status-banner');
         if (this.serverStatus && this.serverStatus.status === 'RUNNING') {
-          App.showToast('Archivo PalWorldSettings.ini guardado en disco.', 'success');
-          const shouldRestart = await App.confirm({
-            title: 'Archivo INI Guardado',
-            message: 'El archivo PalWorldSettings.ini fue actualizado en disco.\n\n¿Deseas reiniciar el servidor de Palworld ahora para aplicar los cambios a la partida?',
-            confirmText: 'Reiniciar Servidor',
-            cancelText: 'Más Tarde',
-            danger: false
-          });
-          if (shouldRestart) {
-            await this.restartServer();
+          if (banner) {
+            banner.style.display = 'block';
+            banner.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
           }
+          App.showToast('Archivo PalWorldSettings.ini guardado en disco. Reinicia el servidor para aplicar.', 'warning');
         } else {
-          App.showToast('Archivo PalWorldSettings.ini actualizado con éxito.', 'success');
+          if (banner) banner.style.display = 'none';
+          App.showToast('Archivo PalWorldSettings.ini actualizado con éxito. Se aplicará al iniciar el servidor.', 'success');
         }
       } else {
         App.showToast(data.message || 'Error al guardar archivo INI.', 'danger');
@@ -415,6 +405,8 @@ const Settings = {
       const data = await res.json();
       if (res.ok && data.status !== 'error') {
         App.showToast('Servidor reiniciado con éxito. Los nuevos ajustes se están cargando.', 'success');
+        const banner = document.getElementById('settings-status-banner');
+        if (banner) banner.style.display = 'none';
         await this.fetchServerStatus();
       } else {
         App.showToast(data.message || 'Error al solicitar el reinicio.', 'danger');

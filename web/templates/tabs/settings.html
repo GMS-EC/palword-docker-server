@@ -17,20 +17,19 @@
 
   <!-- Main Settings Container -->
   <div id="settings-container">
-    <!-- Server Status & Live Sync Information Banner -->
-    <div class="card" id="settings-status-banner" style="margin-bottom: 18px; padding: 14px 18px; border-left: 4px solid #58a6ff; background: rgba(22, 27, 34, 0.85);">
+    <!-- Server Status & Live Sync Information Banner (Shown after saving changes while server is online) -->
+    <div class="card" id="settings-status-banner" style="display: none; margin-bottom: 18px; padding: 14px 18px; border-left: 4px solid #e3b341; background: rgba(22, 27, 34, 0.95); border-radius: 8px; border-top: 1px solid var(--border-color); border-right: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color);">
       <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
         <div style="display: flex; align-items: flex-start; gap: 12px; max-width: 760px;">
           <div style="margin-top: 3px;">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#58a6ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e3b341" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
           </div>
           <div>
             <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-              <span style="font-weight: 600; color: #f0f6fc; font-size: 0.95rem;">Sincronización de PalWorldSettings.ini</span>
-              <span id="settings-banner-server-status" class="badge" style="font-size: 0.75rem; background: rgba(63, 185, 80, 0.15); border: 1px solid #3fb950; color: #3fb950;">Servidor En Ejecución</span>
+              <span style="font-weight: 600; color: #f0f6fc; font-size: 0.95rem;">Reinicio Requerido para Aplicar Cambios</span>
             </div>
             <p style="margin: 4px 0 0 0; font-size: 0.82rem; color: var(--text-muted); line-height: 1.45;">
-              Los cambios se guardan directamente en <code style="color: #79c0ff; background: rgba(110, 118, 129, 0.15); padding: 2px 6px; border-radius: 4px;">Pal/Saved/Config/LinuxServer/PalWorldSettings.ini</code>. El motor de Palworld aplica este archivo al arrancar; si el servidor está en línea, <strong>requiere reiniciar para que los cambios surtan efecto en la partida</strong>.
+              Los cambios se guardaron en <code style="color: #79c0ff; background: rgba(110, 118, 129, 0.15); padding: 2px 6px; border-radius: 4px;">Pal/Saved/Config/LinuxServer/PalWorldSettings.ini</code>. Como el servidor está en línea, debes reiniciarlo para que el motor de Palworld aplique los nuevos valores en la partida.
             </p>
           </div>
         </div>
@@ -42,6 +41,9 @@
           <button type="button" class="btn btn-sm btn-warning" id="btn-settings-restart-now" onclick="Settings.restartServer()" style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.8rem;">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
             <span>Reiniciar Servidor para Aplicar</span>
+          </button>
+          <button type="button" class="btn btn-sm btn-outline" onclick="document.getElementById('settings-status-banner').style.display='none'" title="Cerrar aviso" style="padding: 5px 8px; font-size: 0.8rem; color: var(--text-dim); border-color: transparent;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         </div>
       </div>
@@ -203,7 +205,10 @@
         <div class="grid-2">
           <div class="form-group setting-prop-item" data-key="RCONEnabled">
             <label class="toggle-switch-label" style="display:flex; justify-content:space-between; align-items:center;">
-              <span>Habilitar RCON (RCONEnabled)</span>
+              <div>
+                <span style="font-weight: 500;">Habilitar RCON</span>
+                <div class="field-hint" style="margin-top: 2px;">Permite administrar el servidor mediante consola de comandos remota.</div>
+              </div>
               <label class="toggle-switch">
                 <input type="checkbox" id="prop-RCONEnabled" data-key="RCONEnabled" onchange="Settings.markDirty()">
                 <span class="slider"></span>
@@ -212,7 +217,10 @@
           </div>
           <div class="form-group setting-prop-item" data-key="RESTAPIEnabled">
             <label class="toggle-switch-label" style="display:flex; justify-content:space-between; align-items:center;">
-              <span>Habilitar REST API (RESTAPIEnabled)</span>
+              <div>
+                <span style="font-weight: 500;">Habilitar REST API</span>
+                <div class="field-hint" style="margin-top: 2px;">Permite consultar métricas de rendimiento, TPS y lista de jugadores en tiempo real.</div>
+              </div>
               <label class="toggle-switch">
                 <input type="checkbox" id="prop-RESTAPIEnabled" data-key="RESTAPIEnabled" onchange="Settings.markDirty()">
                 <span class="slider"></span>
@@ -335,7 +343,10 @@
         <div class="grid-2">
           <div class="form-group setting-prop-item" data-key="bIsPvP">
             <label class="toggle-switch-label" style="display:flex; justify-content:space-between; align-items:center;">
-              <span>Modo PvP (bIsPvP)</span>
+              <div>
+                <span style="font-weight: 500;">Modo PvP</span>
+                <div class="field-hint" style="margin-top: 2px;">Permite el combate entre jugadores y gremios rivales.</div>
+              </div>
               <label class="toggle-switch">
                 <input type="checkbox" id="prop-bIsPvP" data-key="bIsPvP" onchange="Settings.markDirty()">
                 <span class="slider"></span>
@@ -344,7 +355,10 @@
           </div>
           <div class="form-group setting-prop-item" data-key="bEnablePlayerToPlayerDamage">
             <label class="toggle-switch-label" style="display:flex; justify-content:space-between; align-items:center;">
-              <span>Daño entre Jugadores</span>
+              <div>
+                <span style="font-weight: 500;">Daño entre Jugadores</span>
+                <div class="field-hint" style="margin-top: 2px;">Permite infligir daño directamente a otros personajes de jugadores.</div>
+              </div>
               <label class="toggle-switch">
                 <input type="checkbox" id="prop-bEnablePlayerToPlayerDamage" data-key="bEnablePlayerToPlayerDamage" onchange="Settings.markDirty()">
                 <span class="slider"></span>
@@ -356,7 +370,10 @@
         <div class="grid-2">
           <div class="form-group setting-prop-item" data-key="bEnableFriendlyFire">
             <label class="toggle-switch-label" style="display:flex; justify-content:space-between; align-items:center;">
-              <span>Fuego Amigo (bEnableFriendlyFire)</span>
+              <div>
+                <span style="font-weight: 500;">Fuego Amigo</span>
+                <div class="field-hint" style="margin-top: 2px;">Permite el daño accidental entre miembros de un mismo gremio.</div>
+              </div>
               <label class="toggle-switch">
                 <input type="checkbox" id="prop-bEnableFriendlyFire" data-key="bEnableFriendlyFire" onchange="Settings.markDirty()">
                 <span class="slider"></span>
@@ -365,7 +382,10 @@
           </div>
           <div class="form-group setting-prop-item" data-key="bEnableInvaderEnemy">
             <label class="toggle-switch-label" style="display:flex; justify-content:space-between; align-items:center;">
-              <span>Incursiones a la Base (Raids de enemigos)</span>
+              <div>
+                <span style="font-weight: 500;">Incursiones a la Base (Raids)</span>
+                <div class="field-hint" style="margin-top: 2px;">Activa ataques periódicos de enemigos invasores y sindicatos a tus bases.</div>
+              </div>
               <label class="toggle-switch">
                 <input type="checkbox" id="prop-bEnableInvaderEnemy" data-key="bEnableInvaderEnemy" onchange="Settings.markDirty()">
                 <span class="slider"></span>
@@ -455,7 +475,10 @@
         <div class="grid-2">
           <div class="form-group setting-prop-item" data-key="bEnableFastTravel">
             <label class="toggle-switch-label" style="display:flex; justify-content:space-between; align-items:center;">
-              <span>Viaje Rápido entre Estatuas (bEnableFastTravel)</span>
+              <div>
+                <span style="font-weight: 500;">Viaje Rápido entre Estatuas</span>
+                <div class="field-hint" style="margin-top: 2px;">Habilita el teletransporte entre puntos de viaje rápido del mapa.</div>
+              </div>
               <label class="toggle-switch">
                 <input type="checkbox" id="prop-bEnableFastTravel" data-key="bEnableFastTravel" onchange="Settings.markDirty()">
                 <span class="slider"></span>
@@ -464,7 +487,10 @@
           </div>
           <div class="form-group setting-prop-item" data-key="bEnableNonLoginPenalty">
             <label class="toggle-switch-label" style="display:flex; justify-content:space-between; align-items:center;">
-              <span>Penalización por Inactividad</span>
+              <div>
+                <span style="font-weight: 500;">Penalización por Inactividad</span>
+                <div class="field-hint" style="margin-top: 2px;">Aplica penalizaciones a estructuras y personajes tras desconexiones prolongadas.</div>
+              </div>
               <label class="toggle-switch">
                 <input type="checkbox" id="prop-bEnableNonLoginPenalty" data-key="bEnableNonLoginPenalty" onchange="Settings.markDirty()">
                 <span class="slider"></span>

@@ -4,6 +4,7 @@ import time
 import shutil
 import asyncio
 import socket
+import signal
 import psutil
 import json
 from collections import deque
@@ -39,17 +40,98 @@ class ProcessManager:
         shipping_bin = settings.palworld_data_dir / "Pal" / "Binaries" / "Linux" / "PalServer-Linux-Shipping"
         return server_sh.exists() or shipping_bin.exists()
 
+    def _get_all_pal_processes(self) -> List[psutil.Process]:
+        """Obtiene todos los objetos psutil.Process activos pertenecientes al servidor de Palworld y sus subprocesos."""
+        found_procs: Dict[int, psutil.Process] = {}
+
+        # 1. Proceso principal manejado y su árbol completo de hijos
+        if self.process and self.process.pid:
+            try:
+                main_p = psutil.Process(self.process.pid)
+                if main_p.is_running() and main_p.status() != psutil.STATUS_ZOMBIE:
+                    found_procs[main_p.pid] = main_p
+                    for child in main_p.children(recursive=True):
+                        try:
+                            if child.is_running() and child.status() != psutil.STATUS_ZOMBIE:
+                                found_procs[child.pid] = child
+                        except (psutil.NoSuchProcess, psutil.AccessDenied):
+                            pass
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                pass
+
+        # 2. Escaneo global para detectar procesos huérfanos o binarios nativos (PalServer-Linux-Shipping, etc.)
+        try:
+            for p in psutil.process_iter(['pid', 'name', 'cmdline', 'status']):
+                try:
+                    if p.info.get('status') == psutil.STATUS_ZOMBIE:
+                        continue
+                    pid = p.info.get('pid')
+                    if not pid or pid == os.getpid() or pid in found_procs:
+                        continue
+
+                    name = (p.info.get('name') or '').lower()
+                    if name in ('python', 'python.exe', 'python3', 'uvicorn', 'systemd', 'init'):
+                        continue
+
+                    cmdline_list = p.info.get('cmdline') or []
+                    cmdline = ' '.join(cmdline_list).lower()
+
+                    # Proteger el propio panel web de FastAPI / Uvicorn
+                    if 'uvicorn' in cmdline or 'app.main:app' in cmdline:
+                        continue
+
+                    is_pal = (
+                        'palserver' in name or
+                        'palserver-linux-shipping' in name or
+                        'palserver-linux-test' in name or
+                        'palserver.sh' in cmdline or
+                        'palserver-linux-shipping' in cmdline or
+                        'pal/binaries/linux' in cmdline
+                    )
+                    if is_pal:
+                        found_procs[pid] = p
+                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                    pass
+        except Exception:
+            pass
+
+        return list(found_procs.values())
+
+    def _is_pal_process_running(self) -> bool:
+        """Verifica si existe algún proceso del servidor de Palworld activo en el sistema."""
+        return len(self._get_all_pal_processes()) > 0
+
+    def get_server_pid(self) -> Optional[int]:
+        """Retorna el PID del proceso de Palworld más relevante (priorizando el binario nativo PalServer-Linux-Shipping)."""
+        procs = self._get_all_pal_processes()
+        for p in procs:
+            try:
+                name = p.name().lower()
+                cmdline = ' '.join(p.cmdline()).lower()
+                if 'palserver-linux-shipping' in name or 'palserver-linux-shipping' in cmdline:
+                    return p.pid
+            except Exception:
+                pass
+
+        if procs:
+            return procs[0].pid
+
+        if self.process and self.process.returncode is None:
+            return self.process.pid
+
+        return None
+
     def get_status(self) -> str:
         if self.status in ("INSTALLING", "STOPPING"):
             return self.status
 
+        is_running = self._is_pal_process_running()
+
         if self.status == "STARTING":
-            if self.process and self.process.returncode is not None:
+            if not is_running:
                 self.status = "OFFLINE"
                 return "OFFLINE"
             return "STARTING"
-
-        is_running = self._is_pal_process_running()
 
         if not is_running:
             self.status = "OFFLINE"
@@ -60,51 +142,6 @@ class ProcessManager:
             return "RUNNING"
 
         return self.status
-
-    def _is_pal_process_running(self) -> bool:
-        if self.process and self.process.returncode is None:
-            return True
-        try:
-            for p in psutil.process_iter(['name', 'cmdline']):
-                name = (p.info.get('name') or '').lower()
-                if name in ('python', 'python.exe', 'python3', 'bash', 'sh', 'powershell.exe', 'pwsh.exe', 'cmd.exe'):
-                    continue
-                cmdline_list = p.info.get('cmdline') or []
-                cmdline = ' '.join(cmdline_list).lower()
-                is_server = (
-                    'palserver' in name or
-                    'palserver-linux-shipping' in name or
-                    'palserver-linux-test' in name or
-                    'palserver.sh' in cmdline or
-                    'palserver-linux-shipping' in cmdline
-                )
-                if is_server:
-                    return True
-        except Exception:
-            pass
-        return False
-
-    def get_server_pid(self) -> Optional[int]:
-        if self.process and self.process.returncode is None:
-            return self.process.pid
-        try:
-            for p in psutil.process_iter(['pid', 'name', 'cmdline']):
-                name = (p.info.get('name') or '').lower()
-                if name in ('python', 'python.exe', 'python3', 'bash', 'sh', 'powershell.exe', 'pwsh.exe', 'cmd.exe'):
-                    continue
-                cmdline_list = p.info.get('cmdline') or []
-                cmdline = ' '.join(cmdline_list).lower()
-                is_server = (
-                    'palserver' in name or
-                    'palserver-linux-shipping' in name or
-                    'palserver.sh' in cmdline or
-                    'palserver-linux-shipping' in cmdline
-                )
-                if is_server:
-                    return p.info['pid']
-        except Exception:
-            pass
-        return None
 
     async def broadcast_log(self, message: str) -> None:
         """Añade un log al buffer y lo difunde a todos los clientes web conectados."""
@@ -174,16 +211,18 @@ class ProcessManager:
                 if not self._intentional_stop:
                     await self.broadcast_log("[Palworld Server] [AVISO] El proceso del servidor se cerró durante el arranque.")
                 self.status = "OFFLINE"
+                await self.broadcast_status("OFFLINE")
                 return
 
             if await self.is_server_ready():
                 self.status = "RUNNING"
                 self._server_up_detected = True
+                await self.broadcast_status("RUNNING")
                 await self.broadcast_log("========================================================================")
                 await self.broadcast_log("  PALWORLD DEDICATED SERVER 100% ONLINE Y DISPONIBLE PARA CONEXIONES  ")
                 await self.broadcast_log(f"  Puerto de Juego: {settings.server_port} (UDP) | RCON: {settings.rcon_port} | REST API: {settings.rest_api_port}")
                 await self.broadcast_log("========================================================================")
-                
+
                 # Disparar webhook de inicio completado
                 try:
                     from app.core.webhook_manager import webhook_manager
@@ -197,6 +236,7 @@ class ProcessManager:
         if self.status == "STARTING":
             # Si el proceso sigue vivo tras el timeout, asumir RUNNING
             self.status = "RUNNING"
+            await self.broadcast_status("RUNNING")
             await self.broadcast_log("[Palworld Server] Tiempo de arranque completado. Servidor en línea.")
 
     async def _read_stream(self, stream):
@@ -245,6 +285,9 @@ class ProcessManager:
         if current in ("RUNNING", "STARTING"):
             return {"success": False, "message": f"El servidor ya se encuentra en estado {current}."}
 
+        if self._is_pal_process_running():
+            return {"success": False, "message": "Ya existe una instancia de Palworld en ejecución en el sistema."}
+
         if not self.is_installed():
             return {"success": False, "message": "El servidor de Palworld no está instalado. Ve a la pestaña 'Setup' para instalarlo."}
 
@@ -252,6 +295,7 @@ class ProcessManager:
         self._intentional_stop = False
         self._server_up_detected = False
         self.started_at = time.time()
+        await self.broadcast_status("STARTING")
 
         # En sistemas Linux de producción se utiliza scripts/start.sh o PalServer.sh directamente
         start_script = Path("/home/steam/scripts/start.sh")
@@ -263,6 +307,15 @@ class ProcessManager:
         if start_script.exists():
             cmd = ["/bin/bash", str(start_script)]
         elif server_sh.exists():
+            # Asegurar que PalServer.sh use exec al llamar a PalServer-Linux-Shipping para control limpio de señales
+            try:
+                sh_text = server_sh.read_text(encoding="utf-8", errors="ignore")
+                if "exec " not in sh_text and "PalServer-Linux-Shipping" in sh_text:
+                    patched = sh_text.replace('"$SCRIPT_DIR/Pal/Binaries/Linux/PalServer-Linux-Shipping"', 'exec "$SCRIPT_DIR/Pal/Binaries/Linux/PalServer-Linux-Shipping"')
+                    server_sh.write_text(patched, encoding="utf-8")
+            except Exception:
+                pass
+
             # Construcción de argumentos dinámicos desde PalWorldSettings.ini y runtime_config
             from app.core.pal_settings_manager import pal_settings_manager
             ini = pal_settings_manager.read_settings()
@@ -290,7 +343,12 @@ class ProcessManager:
             self._is_simulation = True
             await self.broadcast_log("[Palworld Server] Modo local detectado: PalServer.sh no encontrado en el PATH.")
             self.status = "RUNNING"
+            await self.broadcast_status("RUNNING")
             return {"success": True, "message": "Modo simulación iniciado (entorno de desarrollo local)."}
+
+        proc_kwargs = {}
+        if os.name != "nt":
+            proc_kwargs["preexec_fn"] = os.setsid
 
         try:
             await self.broadcast_log(f"[Palworld Server] Lanzando ejecutable del servidor con comando: {' '.join(cmd)}")
@@ -298,7 +356,8 @@ class ProcessManager:
                 *cmd,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.STDOUT,
-                cwd=cwd
+                cwd=cwd,
+                **proc_kwargs
             )
 
             self._reader_task = asyncio.create_task(self._read_stream(self.process.stdout))
@@ -308,63 +367,123 @@ class ProcessManager:
             return {"success": True, "message": "Servidor de Palworld iniciando...", "pid": self.process.pid}
         except Exception as e:
             self.status = "OFFLINE"
+            await self.broadcast_status("OFFLINE")
             await self.broadcast_log(f"[Palworld Server] [ERROR] No se pudo lanzar el servidor: {e}")
             return {"success": False, "message": str(e)}
 
     async def stop_server(self, grace_seconds: int = 15) -> Dict[str, Any]:
-        """Detiene de forma segura el servidor ejecutando un guardado previo del mundo."""
+        """Detiene de forma segura y completa el servidor Palworld y todo su árbol de procesos."""
         current = self.get_status()
-        if current == "OFFLINE":
+        if current == "OFFLINE" and not self._is_pal_process_running():
             return {"success": True, "message": "El servidor ya se encuentra detenido."}
 
         self.status = "STOPPING"
         self._intentional_stop = True
+        await self.broadcast_status("STOPPING")
 
-        await self.broadcast_log(f"[Palworld Server] [SEGURIDAD] Guardando estado del mundo (SaveWorld) antes de apagar...")
-        try:
-            save_ok = await pal_api_client.save_world()
-            if save_ok:
-                await self.broadcast_log("[Palworld Server] Guardado del mundo completado con éxito.")
-        except Exception as e:
-            await self.broadcast_log(f"[Palworld Server] Aviso durante guardado: {e}")
-
-        # Enviar orden de shutdown vía API / RCON
-        try:
-            await pal_api_client.shutdown(wait_seconds=5, message="El servidor se apagará ahora")
-        except Exception:
-            pass
-
-        # Si tenemos el proceso controlado
-        pid = self.get_server_pid()
-        if self.process and self.process.returncode is None:
+        if grace_seconds > 0:
+            await self.broadcast_log("[Palworld Server] [SEGURIDAD] Guardando estado del mundo (SaveWorld) antes de apagar...")
             try:
-                self.process.terminate()
-                try:
-                    await asyncio.wait_for(self.process.wait(), timeout=grace_seconds)
-                except asyncio.TimeoutError:
-                    await self.broadcast_log("[Palworld Server] El proceso no respondió al apagado seguro; forzando cierre...")
-                    self.process.kill()
-                    await self.process.wait()
+                save_ok = await pal_api_client.save_world()
+                if save_ok:
+                    await self.broadcast_log("[Palworld Server] Guardado del mundo completado con éxito.")
             except Exception as e:
-                await self.broadcast_log(f"[Palworld Server] Excepción deteniendo proceso: {e}")
-        elif pid:
+                await self.broadcast_log(f"[Palworld Server] Aviso durante guardado: {e}")
+
+            # Enviar orden de shutdown vía API / RCON
             try:
-                p = psutil.Process(pid)
-                p.terminate()
-                gone, alive = psutil.wait_procs([p], timeout=grace_seconds)
-                for a in alive:
-                    a.kill()
+                await pal_api_client.shutdown(wait_seconds=min(grace_seconds, 5), message="El servidor se apagará ahora")
             except Exception:
                 pass
 
+            # Esperar brevemente (hasta 4s) a que el servidor atienda el shutdown ordenado de la REST API
+            for _ in range(4):
+                if not self._is_pal_process_running():
+                    break
+                await asyncio.sleep(1)
+
+        # Obtener todos los procesos del árbol de Palworld
+        procs = self._get_all_pal_processes()
+
+        if procs:
+            if grace_seconds > 0:
+                pids_str = ", ".join(str(p.pid) for p in procs)
+                await self.broadcast_log(f"[Palworld Server] Solicitando cierre ordenado de {len(procs)} proceso(s) (PIDs: {pids_str})...")
+
+                # Intentar SIGTERM al grupo de procesos en POSIX
+                if self.process and self.process.pid and os.name != "nt":
+                    try:
+                        os.killpg(os.getpgid(self.process.pid), signal.SIGTERM)
+                    except Exception:
+                        pass
+
+                for p in procs:
+                    try:
+                        p.terminate()
+                    except (psutil.NoSuchProcess, psutil.AccessDenied):
+                        pass
+
+                gone, alive = psutil.wait_procs(procs, timeout=max(1, grace_seconds - 4))
+            else:
+                alive = procs
+
+            # Si quedaron procesos vivos tras el timeout o si es Kill inmediato (grace_seconds == 0)
+            if alive:
+                alive_pids = ", ".join(str(p.pid) for p in alive)
+                await self.broadcast_log(f"[Palworld Server] Forzando cierre inmediato (SIGKILL) de {len(alive)} proceso(s) remanente(s) (PIDs: {alive_pids})...")
+                if self.process and self.process.pid and os.name != "nt":
+                    try:
+                        os.killpg(os.getpgid(self.process.pid), signal.SIGKILL)
+                    except Exception:
+                        pass
+                for p in alive:
+                    try:
+                        p.kill()
+                    except (psutil.NoSuchProcess, psutil.AccessDenied):
+                        pass
+                psutil.wait_procs(alive, timeout=3)
+
+        # Limpiar el objeto de proceso asyncio
+        if self.process:
+            try:
+                if self.process.returncode is None:
+                    self.process.kill()
+                await asyncio.wait_for(self.process.wait(), timeout=1.5)
+            except Exception:
+                pass
+            self.process = None
+
         if self._reader_task:
             self._reader_task.cancel()
+            self._reader_task = None
         if self._log_file_task:
             self._log_file_task.cancel()
+            self._log_file_task = None
+
+        # Verificación exhaustiva final de procesos
+        remaining = self._get_all_pal_processes()
+        if remaining:
+            # Reintento final de terminación forzada
+            for p in remaining:
+                try:
+                    p.kill()
+                except Exception:
+                    pass
+            await asyncio.sleep(0.5)
+            remaining = self._get_all_pal_processes()
+
+        if remaining:
+            self.status = "RUNNING"
+            await self.broadcast_status("RUNNING")
+            err_pids = ", ".join(str(p.pid) for p in remaining)
+            err_msg = f"[Palworld Server] [ERROR] No se pudieron terminar los procesos con PID: {err_pids}."
+            await self.broadcast_log(err_msg)
+            return {"success": False, "message": err_msg}
 
         self.status = "OFFLINE"
         self.started_at = None
         await self.broadcast_log("[Palworld Server] Servidor de Palworld detenido exitosamente.")
+        await self.broadcast_status("OFFLINE")
 
         # Notificar por webhook
         try:

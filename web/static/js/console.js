@@ -288,22 +288,30 @@ const Console = {
       } catch (e) {}
     }
 
+    if (action === 'stop' || action === 'kill') {
+      this.updateStatusUI('STOPPING');
+    } else if (action === 'start' || action === 'restart') {
+      this.updateStatusUI('STARTING');
+    }
+
     try {
       const res = await fetch(`/api/server/${action}`, { method: 'POST' });
       const data = await res.json();
-      if (data.status === 'error') {
-        App.showToast(data.message, 'danger');
+      if (data.status === 'error' || data.success === false) {
+        App.showToast(data.message || this._fmt('t_console_action_error', [action], `Error al ejecutar acción ${action}`), 'danger');
       } else {
         const labels = {
           start: this._t('toast_server_started', 'Servidor iniciado'),
-          stop: this._t('toast_server_stopped', 'Detención solicitada'),
+          stop: this._t('toast_server_stopped', 'Detención completada'),
           restart: this._t('toast_server_restarted', 'Reinicio solicitado'),
           kill: this._t('toast_server_killed', 'Servidor finalizado forzadamente (Kill)')
         };
         App.showToast(labels[action] || this._fmt('t_console_action_success', [action], `Acción ${action} ejecutada`), 'success');
       }
+      await this.pollStatus();
     } catch (e) {
       App.showToast(this._fmt('t_console_action_error', [action], `Error al ejecutar acción ${action}`), 'danger');
+      await this.pollStatus();
     }
   },
 
@@ -365,6 +373,17 @@ const Console = {
       mobDot.className = `status-dot ${(status || 'offline').toLowerCase()}`;
     }
 
+    const topStatus = document.getElementById('top-server-status');
+    if (topStatus) {
+      let label = 'Apagado';
+      if (isRunning) label = this._t('banner_status_running', 'En Ejecución');
+      else if (isStarting) label = this._t('banner_status_starting', 'Iniciando...');
+      else if (isStopping) label = this._t('banner_status_stopping', 'Deteniendo...');
+      else label = this._t('banner_status_offline', 'Apagado');
+      topStatus.textContent = label;
+      topStatus.className = `overview-val status-text-inline ${(status || 'offline').toLowerCase()}`;
+    }
+
     if (btnStart) btnStart.disabled = !isOffline;
     if (btnStop) btnStop.disabled = isOffline || isStopping;
     if (btnRestart) btnRestart.disabled = isOffline || isStopping;
@@ -375,6 +394,18 @@ const Console = {
       this.hideCrashAlert();
     } else if (isOffline) {
       this.updateTpsUI(null);
+      const pidBadge = document.getElementById('stat-pid-badge');
+      if (pidBadge) {
+        pidBadge.textContent = 'ID: --';
+        pidBadge.style.color = 'var(--text-muted)';
+        pidBadge.style.borderColor = 'var(--border-color)';
+      }
+      const topCpu = document.getElementById('top-server-cpu');
+      if (topCpu) topCpu.textContent = '0.0 %';
+      const statCpuVal = document.getElementById('stat-cpu-val');
+      if (statCpuVal) statCpuVal.textContent = '0.0%';
+      const statCpuBar = document.getElementById('stat-cpu-bar');
+      if (statCpuBar) statCpuBar.style.width = '0%';
     }
   },
 
@@ -419,10 +450,12 @@ const Console = {
     const diskVal = document.getElementById('stat-disk-val');
     const diskBar = document.getElementById('stat-disk-bar');
     if (diskVal) {
-      const usedGb = ((stats.disk_used_mb || 0) / 1024).toFixed(2);
-      const limitGb = ((stats.disk_limit_mb || 10240) / 1024).toFixed(1);
+      const usedMb = stats.disk_used_mb || 0;
+      const limitMb = stats.disk_limit_mb || 10240;
       const diskPct = stats.disk_percent !== undefined ? Number(stats.disk_percent) : 0;
-      diskVal.textContent = `${usedGb} GB / ${limitGb} GB (${diskPct}%)`;
+      const usedStr = usedMb >= 1024 ? `${(usedMb / 1024).toFixed(2)} GB` : `${Math.round(usedMb)} MB`;
+      const limitStr = limitMb >= 1024 ? `${(limitMb / 1024).toFixed(1)} GB` : `${Math.round(limitMb)} MB`;
+      diskVal.textContent = `${usedStr} / ${limitStr} (${diskPct}%)`;
       if (diskBar) {
         diskBar.style.width = `${Math.min(diskPct, 100)}%`;
         diskBar.className = diskPct > 85 ? 'progress-bar-fill danger' : (diskPct > 65 ? 'progress-bar-fill warning' : 'progress-bar-fill');
