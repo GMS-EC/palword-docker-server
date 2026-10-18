@@ -75,10 +75,10 @@ async def lifespan(app: FastAPI):
             process_manager.status = "STARTING"
             asyncio.create_task(process_manager._watch_server_readiness())
 
-    # Autoinicio si el servidor está configurado para ello
+    # Autoinicio si el servidor está configurado para ello (por defecto desactivado a menos que se configure en Ajustes o AUTOSTART_SERVER=true)
     autostart_cfg = settings.runtime_config.get(
         "autostart_server",
-        os.getenv("AUTOSTART_SERVER", "true").lower() in ("true", "1", "yes")
+        os.getenv("AUTOSTART_SERVER", "false").lower() in ("true", "1", "yes")
     )
     if autostart_cfg and process_manager.is_installed():
         async def _autostart():
@@ -659,6 +659,12 @@ async def api_save_settings(payload: Dict[str, Any]):
     for key in ("server_name", "server_description", "server_password", "admin_server_password", "max_players"):
         if key in payload:
             runtime_updates[key] = payload[key]
+
+    if "autostart_server" in payload:
+        runtime_updates["autostart_server"] = bool(payload["autostart_server"])
+    if "autostart_server" in ini_updates:
+        val = ini_updates.pop("autostart_server")
+        runtime_updates["autostart_server"] = (val is True or str(val).lower() in ("true", "1", "yes"))
 
     if "ServerName" in ini_updates:
         runtime_updates["server_name"] = ini_updates["ServerName"]

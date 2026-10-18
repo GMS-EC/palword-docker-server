@@ -98,7 +98,7 @@ class Settings:
             "multithreading": True,
             "community": False,
             "update_on_start": True,
-            "autostart_server": True,
+            "autostart_server": False,
             "discord_webhook_url": "",
             "discord_language": "es",
             "schedule_enabled": False,

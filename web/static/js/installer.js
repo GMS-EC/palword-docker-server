@@ -8,6 +8,7 @@ const Installer = {
   async loadInstaller() {
     this.setupEvents();
     await this.refreshStatus();
+    await this.fetchFlags();
     this.setupTerminalSocket();
   },
 
@@ -77,6 +78,7 @@ const Installer = {
         const data = await res.json();
         this.applyLockState(data);
       }
+      await this.fetchFlags();
     } catch (e) {
       console.warn("Could not fetch server status:", e);
     }
@@ -205,7 +207,25 @@ const Installer = {
     }
   },
 
+  async fetchFlags() {
+    try {
+      const res = await fetch('/api/config');
+      if (res.ok) {
+        const cfg = await res.json();
+        const autoEl = document.getElementById('flag-autostart');
+        if (autoEl) autoEl.checked = (cfg.autostart_server === true);
+        const multiEl = document.getElementById('flag-multithreading');
+        if (multiEl) multiEl.checked = (cfg.multithreading !== false && cfg.multithreading_enabled !== false);
+        const pubEl = document.getElementById('flag-publiclobby');
+        if (pubEl) pubEl.checked = (cfg.community === true || cfg.public_lobby_enabled === true);
+      }
+    } catch (e) {
+      console.warn("Could not fetch installer flags:", e);
+    }
+  },
+
   async saveFlags() {
+    const autostart = document.getElementById('flag-autostart')?.checked ?? false;
     const multithreading = document.getElementById('flag-multithreading')?.checked ?? true;
     const publiclobby = document.getElementById('flag-publiclobby')?.checked ?? false;
 
@@ -214,7 +234,10 @@ const Installer = {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          autostart_server: autostart,
+          multithreading: multithreading,
           multithreading_enabled: multithreading,
+          community: publiclobby,
           public_lobby_enabled: publiclobby
         })
       });

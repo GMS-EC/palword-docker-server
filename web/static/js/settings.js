@@ -124,8 +124,12 @@ const Settings = {
       }
     });
 
-    // Sincronizar controles interactivos de Crossplay
+    // Sincronizar controles interactivos de Crossplay y Autostart
     this.syncCrossplayToUI(ini.CrossplayPlatforms || '(Steam,Xbox,PS5,Mac)');
+    const autostartVal = (this.runtimeConfig && this.runtimeConfig.autostart_server !== undefined)
+      ? this.runtimeConfig.autostart_server
+      : (ini.autostart_server === true || ini.autostart_server === 'true');
+    this.syncAutostartToUI(autostartVal);
   },
 
   syncCrossplayToUI(rawVal) {
@@ -154,6 +158,34 @@ const Settings = {
 
     const hiddenInput = document.getElementById('prop-CrossplayPlatforms');
     if (hiddenInput) hiddenInput.value = enabled ? '(Steam,Xbox,PS5)' : '(Steam)';
+
+    this.markDirty();
+  },
+
+  syncAutostartToUI(rawVal) {
+    const isEnabled = (rawVal === true || rawVal === 'true' || rawVal === 1);
+    const toggle = document.getElementById('toggle-autostart-server');
+    if (toggle) toggle.checked = isEnabled;
+
+    const label = document.getElementById('autostart-status-label');
+    if (label) {
+      label.textContent = isEnabled ? 'Activado' : 'Desactivado';
+      label.style.color = isEnabled ? '#3fb950' : 'var(--text-dim)';
+    }
+
+    const hiddenInput = document.getElementById('prop-autostart_server');
+    if (hiddenInput) hiddenInput.value = isEnabled ? 'true' : 'false';
+  },
+
+  onAutostartToggle(enabled) {
+    const label = document.getElementById('autostart-status-label');
+    if (label) {
+      label.textContent = enabled ? 'Activado' : 'Desactivado';
+      label.style.color = enabled ? '#3fb950' : 'var(--text-dim)';
+    }
+
+    const hiddenInput = document.getElementById('prop-autostart_server');
+    if (hiddenInput) hiddenInput.value = enabled ? 'true' : 'false';
 
     this.markDirty();
   },
