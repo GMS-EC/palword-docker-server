@@ -23,6 +23,7 @@ jobs:
       version: ${{ steps.get_version.outputs.version }}
       tag_name: ${{ steps.get_version.outputs.tag_name }}
       tag_created: ${{ steps.check_release.outputs.tag_created }}
+      should_release: ${{ steps.check_release.outputs.should_release }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -134,8 +135,8 @@ jobs:
           images: ${{ secrets.DOCKERHUB_USERNAME }}/palword-docker-server
           tags: |
             type=raw,value=latest
-            type=raw,value=${{ needs.release.outputs.version }},enable=${{ needs.release.outputs.tag_created == 'true' }}
-            type=raw,value=${{ needs.release.outputs.tag_name }},enable=${{ needs.release.outputs.tag_created == 'true' }}
+            type=raw,value=${{ needs.release.outputs.version }},enable=${{ needs.release.outputs.tag_created == 'true' || needs.release.outputs.should_release == 'true' }}
+            type=raw,value=${{ needs.release.outputs.tag_name }},enable=${{ needs.release.outputs.tag_created == 'true' || needs.release.outputs.should_release == 'true' }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
